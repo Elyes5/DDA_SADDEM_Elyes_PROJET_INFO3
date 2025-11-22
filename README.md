@@ -15,7 +15,7 @@ L'application vise à formaliser les échanges entre développeurs en permettant
 L'application est conçue selon une architecture modulaire et conteneurisée.
 
 * **Backend/API RESTful** : Développé en **Java/Spring Boot**.
-* **Base de Données** : **PostgreSQL (PSQL)** (base de données relationnelle obligatoire) ou GraphQL potentiellement (choix pas encore réalisé).
+* **Base de Données** : **PostgreSQL (PSQL)** (base de données relationnelle obligatoire).
 * **ORM** : Utilisation d'**Hibernate/JPA** via **Spring Data JPA**.
 * **Conteneurisation** : L'ensemble des services est conteneurisé avec **Docker** et orchestré via **Docker Compose**.
 ---
@@ -35,7 +35,7 @@ Pour lancer l'application, assurez-vous d'avoir Docker et Docker Compose install
     ```bash
     docker-compose up --build -d
     ```
-    *(Cette commande construit l'image du serveur, démarre le serveur et le conteneur PostgreSQL (ou GraphQL).)*
+    *(Cette commande construit l'image du serveur, démarre le serveur et le conteneur PostgreSQL.)*
 
 3.  **Vérification :**
     Les APIs devraient être accessibles à l'adresse suivante : `http://localhost:8080/api/` (ou le port que vous avez configuré).
