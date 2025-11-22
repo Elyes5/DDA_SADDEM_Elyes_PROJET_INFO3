@@ -63,7 +63,7 @@ Le schéma de base de données est structuré pour répondre aux exigences de la
 Voici le diagramme résultant:
 
 <div align="center">
-  <img src="diagram.png" alt="Diagram" width="400" height="400">
+  <img src="diagram.png" alt="Diagram" width="1000" height="1000">
 </div>
 
 
