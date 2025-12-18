@@ -1,0 +1,101 @@
+erDiagram
+
+    %% ===============================
+    %%   RELATIONS
+    %% ===============================
+
+    User ||--o{ Snippet : posts
+    User ||--o{ Review : writes
+    User ||--o{ UserFollower : follows
+    Snippet ||--o{ Review : has
+
+    User }o--o{ Snippet : likes
+    Snippet }o--o{ Topic : covers
+    Snippet }o--o{ SnippetTopic : classified_by
+    Topic }o--o{ SnippetTopic : classifies
+    User }o--o{ UserLikesSnippet : likes
+    Snippet }o--o{ UserLikesSnippet : liked_by
+    User }o--o{ UserFollower : followed_by
+    Badge ||--o{ User : awarded_to
+
+
+    %% ===============================
+    %%   ENTITIES
+    %% ===============================
+
+    User {
+        int user_id PK
+        string username
+        string email
+        string first_name
+        string last_name
+        string bio
+        string avatar_url
+        string password_hash
+        string phone_number
+        boolean is_active
+        boolean is_verified
+        datetime join_date
+        datetime last_login
+        int badge_id FK
+    }
+
+    Badge {
+        int badge_id PK
+        string badge_name
+        string description
+        date date_obtained
+        string icon_url
+    }
+
+    Snippet {
+        int snippet_id PK
+        int author_id FK
+        string title
+        string code_content
+        string language
+        string description
+        boolean is_public
+        int view_count
+        int like_count
+        date creation_date
+        datetime updated_at
+    }
+
+    Review {
+        int review_id PK
+        int snippet_id FK
+        int reviewer_id FK
+        int rating
+        datetime created_at
+        boolean edited
+    }
+
+    Topic {
+        int topic_id PK
+        string name
+        string description
+        string color
+        int popularity_score
+    }
+
+    %% ===============================
+    %%   JOIN TABLES
+    %% ===============================
+
+    SnippetTopic {
+        int snippet_id FK
+        int topic_id FK
+    }
+
+    UserLikesSnippet {
+        int user_id FK
+        int snippet_id FK
+        datetime like_date
+    }
+
+    UserFollower {
+        int follower_id FK
+        int followed_id FK
+        datetime follow_date
+    }
