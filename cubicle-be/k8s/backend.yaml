@@ -1,0 +1,36 @@
+# backend-deploy.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/elyes5/dda_saddem_elyes_projet_info3:latest
+          ports:
+            - containerPort: 5000
+      imagePullSecrets:
+        - name: ghcr-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 5000         # external port
+      targetPort: 5000   # container port in Pod
+  type: LoadBalancer
