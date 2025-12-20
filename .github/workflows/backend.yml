@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Log in to GitHub Container Registry
+      # 2️⃣ Login to GitHub Container Registry
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -28,8 +28,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # 3️⃣ Build and push backend Docker image (ONLY cubicle-be)
-      - name: Build and push Docker image
+      # 3️⃣ Build & push Docker image (backend only)
+      - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: ./cubicle-be
@@ -38,18 +38,18 @@ jobs:
             ghcr.io/${{ vars.HOST_USER }}/${{ vars.HOST_REPOSITORY }}:latest
             ghcr.io/${{ vars.HOST_USER }}/${{ vars.HOST_REPOSITORY }}:${{ github.sha }}
 
-      # 4️⃣ Set up kubectl
+      # 4️⃣ Install kubectl
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      # 5️⃣ Configure kubeconfig (PERSISTENT across steps)
+      # 5️⃣ Configure kubeconfig (persist across steps)
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
           kubectl get nodes
 
-      # 6️⃣ Create / update imagePullSecret for GHCR
+      # 6️⃣ Create / update GHCR imagePullSecret
       - name: Create imagePullSecret
         run: |
           kubectl create secret docker-registry ghcr-secret \
@@ -59,13 +59,15 @@ jobs:
             --docker-email=${{ vars.HOST_EMAIL }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      # 7️⃣ Deploy backend to Kubernetes
-      - name: Deploy backend
+      # 7️⃣ Apply Kubernetes manifests (create Deployment & Service)
+      - name: Apply backend Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/backend.yaml
+
+      # 8️⃣ Update Deployment image & rollout
+      - name: Update backend image
         run: |
           kubectl set image deployment/backend \
             backend=ghcr.io/${{ vars.HOST_USER }}/${{ vars.HOST_REPOSITORY }}:${{ github.sha }}
-
-          kubectl patch deployment backend \
-            -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"ghcr-secret"}]}}}}'
 
           kubectl rollout status deployment/backend

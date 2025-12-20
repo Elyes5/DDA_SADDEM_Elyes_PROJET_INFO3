@@ -1,5 +1,3 @@
-# backend-deploy.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,13 +12,16 @@ spec:
       labels:
         app: backend
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: backend
           image: ghcr.io/elyes5/dda_saddem_elyes_projet_info3:latest
           ports:
-            - containerPort: 5000
-      imagePullSecrets:
-        - name: ghcr-secret
+            - containerPort: 8080
+          env:
+            - name: FLASK_ENV
+              value: PROD
 ---
 apiVersion: v1
 kind: Service
@@ -30,7 +31,6 @@ spec:
   selector:
     app: backend
   ports:
-    - protocol: TCP
-      port: 5000         # external port
-      targetPort: 5000   # container port in Pod
+    - port: 80
+      targetPort: 8080
   type: LoadBalancer
