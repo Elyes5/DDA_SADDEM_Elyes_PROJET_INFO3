@@ -18,7 +18,7 @@ spec:
         - name: backend
           image: ghcr.io/elyes5/dda_saddem_elyes_projet_info3:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 5000
           env:
             - name: FLASK_ENV
               value: PROD
@@ -31,6 +31,6 @@ spec:
   selector:
     app: backend
   ports:
-    - port: 80
-      targetPort: 8080
+    - port: 5000
+      targetPort: 5000
   type: LoadBalancer
