@@ -8,12 +8,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     env:
-      # Non-sensitive repo variables
       HOST_USER: ${{ vars.HOST_USER }}
       HOST_REPOSITORY: ${{ vars.HOST_REPOSITORY }}
       FLASK_ENV: ${{ vars.FLASK_ENV }}
       HOST_EMAIL: ${{ vars.HOST_EMAIL }}
+
     steps:
       # 1️⃣ Checkout repository
       - name: Checkout code
@@ -27,7 +28,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # 3️⃣ Build and push backend Docker image
+      # 3️⃣ Build and push backend Docker image (ONLY cubicle-be)
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -41,21 +42,21 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      # 5️⃣ Configure kubeconfig from GitHub Secret
+      # 5️⃣ Configure kubeconfig (PERSISTENT across steps)
       - name: Configure kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > kubeconfig
-          export KUBECONFIG=$PWD/kubeconfig
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
           kubectl get nodes
 
-      # 6️⃣ Create Kubernetes imagePullSecret for GHCR
+      # 6️⃣ Create / update imagePullSecret for GHCR
       - name: Create imagePullSecret
         run: |
           kubectl create secret docker-registry ghcr-secret \
             --docker-server=ghcr.io \
             --docker-username=${{ github.actor }} \
             --docker-password=${{ secrets.GHCR_PAT }} \
-            --docker-email=${{ vars.HOST_EMAIL }}\
+            --docker-email=${{ vars.HOST_EMAIL }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
       # 7️⃣ Deploy backend to Kubernetes
@@ -63,10 +64,8 @@ jobs:
         run: |
           kubectl set image deployment/backend \
             backend=ghcr.io/${{ vars.HOST_USER }}/${{ vars.HOST_REPOSITORY }}:${{ github.sha }}
-          
-          # Ensure Kubernetes uses the imagePullSecret
+
           kubectl patch deployment backend \
             -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"ghcr-secret"}]}}}}'
 
-          # Wait for rollout to complete
           kubectl rollout status deployment/backend
