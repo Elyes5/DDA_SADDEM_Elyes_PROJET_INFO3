@@ -10,6 +10,7 @@ lerna-debug.log*
 cubicle-fe/node_modules
 cubicle-fe/package-lock.json
 cubicle-fe/.env
+cubicle-be/.venv
 dist
 dist-ssr
 *.local
