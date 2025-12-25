@@ -92,7 +92,7 @@ const MOCK_TOPICS: Topic[] = [
 
 import { Navbar } from '../components/Navbar';
 
-export default function MainFeed() {
+const MainFeed = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>('All');
 
   const filteredSnippets = selectedTopic === 'All' 
@@ -137,3 +137,5 @@ export default function MainFeed() {
     </ThemeProvider>
   );
 }
+
+export default MainFeed;
