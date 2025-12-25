@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import MainFeed from './pages/MainFeed';
 import './App.css';
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path='/home' element={<MainFeed/>} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

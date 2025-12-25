@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - master
-
+    paths:
+      - 'cubicle-be/**'
+      - 'k8s/backend.yaml'
 jobs:
   deploy:
     runs-on: ubuntu-latest
