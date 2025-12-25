@@ -92,7 +92,7 @@ const MOCK_TOPICS: Topic[] = [
 
 import { Navbar } from '../components/Navbar';
 
-const MainFeed = () => {
+const MainFeed : React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>('All');
 
   const filteredSnippets = selectedTopic === 'All' 
