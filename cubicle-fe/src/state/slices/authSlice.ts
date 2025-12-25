@@ -1,10 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-
-interface User {
-  email: string;
-  token: string;
-}
+import type { User } from '../../models/User.ts'
 
 interface AuthState {
   user: User | null;
@@ -41,9 +37,22 @@ export const loginUser = createAsyncThunk<
 >(
   'auth/loginUser',
   ({ email, token }, { rejectWithValue }) => {
-    // waiting for api to be built
-    if (email === 'test@cubicle.com' && token === '123456') {
-      return { email, token: 'fake-jwt-token' };
+    if (
+      email === 'test@cubicle.com' &&
+      token === '123456'
+    ) {
+      const user: User = {
+        user_id: 1,
+        username: 'testuser',
+        first_name: 'Test',
+        last_name: 'User',
+        email,
+        avatar_url: 'https://example.com/avatar.png',
+        phone_number: '+123456789',
+        followers: [],
+      };
+
+      return user;
     }
 
     return rejectWithValue('Email ou mot de passe incorrect');
@@ -75,15 +84,33 @@ const authSlice = createSlice({
   },
 });
 
-export const signupUser = createAsyncThunk<User, SignupData, { rejectValue: string }>(
+export const signupUser = createAsyncThunk<
+  User,
+  SignupData,
+  { rejectValue: string }
+>(
   'auth/signup',
-  // potentially async has to be added here:
+
   (userData, { rejectWithValue }) => {
     try {
-      console.log("Données envoyées:", userData);
-      return { token: "fake-jwt", email: userData.email }; 
+      console.log('Données envoyées:', userData);
+
+      const newUser: User = {
+        user_id: 1,
+        username: userData.username,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        email: userData.email,
+        avatar_url: undefined,
+        phone_number: undefined,
+        followers: [],
+      };
+
+      return newUser;
     } catch (err) {
-      if (err instanceof Error) return rejectWithValue(err.message);
+      if (err instanceof Error) {
+        return rejectWithValue(err.message);
+      }
       return rejectWithValue("Erreur lors de l'inscription");
     }
   }
