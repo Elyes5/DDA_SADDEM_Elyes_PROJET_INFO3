@@ -1,49 +1,9 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail, Message
-from flask_jwt_extended import JWTManager, create_access_token
-from datetime import datetime as dt
-import datetime
-from datetime import timedelta
+from flask import request, jsonify, Blueprint
+from flask_mail import Message
+from flask_jwt_extended import create_access_token
 import secrets
-
-app = Flask(__name__)
-
-# Database Config
-app.config['SECRET_KEY'] = "SECRET_KEY"
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///cubicle.db"
-app.config['JWT_SECRET_KEY'] = "JWT_SECRET_KEY"
-
-# Email Config
-# TODO: Change MAIL_SERVER for infomaniak smtp server when pushing for prod
-app.config['MAIL_SERVER'] = 'localhost'
-app.config['MAIL_PORT'] = 8025
-
-
-db = SQLAlchemy(app)
-mail = Mail(app)
-jwt = JWTManager(app)
-
-
-# Models
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    username = db.Column(db.String(80), nullable=True)
-    is_registered = db.Column(db.Boolean, default=False)
-
-class OTP(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), nullable=False)
-    code = db.Column(db.String(6), nullable=False)
-    created_at = db.Column(db.DateTime, default=dt.now(datetime.UTC))
-
-    # Check for code validity
-    def is_valid(self):
-        return dt.now(datetime.UTC).replace(tzinfo=None) < self.created_at + timedelta(minutes=10)
-
-with app.app_context():
-    db.create_all()
+from models.otp_models import User, OTP
+from extensions.otp_ext import db, mail
 
 
 # Functions
@@ -60,10 +20,10 @@ def send_message_fake(sender, recipients, content):
     print(f"recipients: {recipients}")
     print(f"content: {content}")
 
-
+auth_bp = Blueprint('auth', __name__)
 
 # Login
-@app.route('/api/auth/email-login', methods=['POST'])
+@auth_bp.route('/email-login', methods=['POST'])
 def email_login():
     data = request.get_json()
     email = data.get('email')
@@ -97,7 +57,7 @@ def email_login():
 
 
 # Register
-@app.route('/api/auth/email-register', methods=['POST'])
+@auth_bp.route('/email-register', methods=['POST'])
 def email_register():
     data = request.get_json()
     email = data.get('email')
@@ -111,7 +71,7 @@ def email_register():
         return jsonify({"msg": "This mail is wrong or is already registered, please sign in or check your email spelling."}), 400
     
     # Generate the code
-    otp_code = secrets.randbelow(100000)
+    otp_code = secrets.randbelow(1000000)
     otp_code = f"{otp_code:06d}" # format 1 234 into 001234
     
     OTP.query.filter_by(email=email).delete()
@@ -135,7 +95,7 @@ def email_register():
 
 
 # Verify Code
-@app.route('/api/auth/verify-code', methods=['POST'])
+@auth_bp.route('/verify-code', methods=['POST'])
 def verify_code():
     data = request.get_json()
     email = data.get('email')
@@ -177,5 +137,3 @@ def verify_code():
                     "access_token": access_token,
                     "user": {"id": user.id, "email": user.email}
                     }), 200
-
-app.run("localhost")
