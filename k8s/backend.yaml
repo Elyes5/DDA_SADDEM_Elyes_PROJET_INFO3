@@ -19,12 +19,25 @@ spec:
           image: ghcr.io/elyes5/dda_saddem_elyes_projet_info3:latest
           ports:
             - containerPort: 5000
+          # 1. On monte le fichier ici
+          volumeMounts:
+            - name: ca-volume
+              mountPath: "/etc/ssl/certs/db-ca"
+              readOnly: true
           envFrom:
             - secretRef:
                 name: backend-secrets
           env:
             - name: FLASK_ENV
               value: production
+            # 2. On indique au code Python où se trouve le fichier
+            - name: DB_CA_PATH
+              value: "/etc/ssl/certs/db-ca/ca.pem"
+      # 3. On définit le volume lié au secret
+      volumes:
+        - name: ca-volume
+          secret:
+            secretName: db-ca-secret
 ---
 apiVersion: v1
 kind: Service
