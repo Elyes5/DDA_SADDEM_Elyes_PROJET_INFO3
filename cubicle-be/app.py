@@ -48,7 +48,7 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 # ===== ROUTES =====
 @app.route("/")
 def server_working():
-    return "<p>Serving on 5000</p>"
+    return "<p>Serving on port 5000</p>"
 
 # ===== RUN =====
 if __name__ == "__main__":
