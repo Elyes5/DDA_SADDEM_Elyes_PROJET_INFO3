@@ -1,0 +1,65 @@
+<!-- templates/email_template.html -->
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 500px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+            text-align: center;
+        }
+        .logo {
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333333;
+            margin-bottom: 10px;
+        }
+        .message {
+            font-size: 16px;
+            color: #555555;
+            margin-bottom: 20px;
+        }
+        .otp {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #3B49DF;
+            margin-bottom: 20px;
+        }
+        .expiry {
+            font-size: 14px;
+            color: #888888;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #AAAAAA;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="logo">
+            <img src="https://i.imgur.com/tcJi0nx.png" width="60" height="60" alt="Cubicle Logo">
+        </div>
+        <div class="title">Welcome back to Cubicle!</div>
+        <div class="message">Here is your code:</div>
+        <div class="otp">{{ code }}</div>
+        <div class="expiry">It will expire in 10 minutes.</div>
+        <div class="footer">&copy; {{ year }} Cubicle. All rights reserved.</div>
+    </div>
+</body>
+</html>

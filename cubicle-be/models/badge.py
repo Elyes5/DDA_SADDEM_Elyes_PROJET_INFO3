@@ -1,5 +1,4 @@
-from extensions import db
-
+from extensions.otp_ext import db
 
 class Badge(db.Model):
     __tablename__ = 'badge'

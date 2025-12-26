@@ -1,4 +1,4 @@
-from extensions import db
+from extensions.otp_ext import db
 from datetime import datetime, timezone
 
 class Review(db.Model):

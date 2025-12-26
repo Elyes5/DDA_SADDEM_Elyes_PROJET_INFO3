@@ -1,63 +1,72 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { User } from '../../models/User.ts'
+import axios from 'axios';
+import type { User } from '../../models/User.ts';
+
+const API_URL = 'https://ton-api.com';
+
+interface ApiError {
+  message: string;
+}
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   error: string | null;
-}
-
-interface LoginPayload {
-  email: string;
-  token: string;
-}
-
-interface SignupData {
-  username: string;
-  first_name: string;
-  email: string;
-  last_name: string;
-  avatar_url?: string;
-  phone_number?: string;
+  emailSent: boolean;
+  currentEmail: string | null;
 }
 
 const initialState: AuthState = {
   user: null,
   loading: false,
   error: null,
+  emailSent: false,
+  currentEmail: null,
 };
 
+// --- Thunks ---
 
-
-export const loginUser = createAsyncThunk<
-  User,
-  LoginPayload,
+// Phase 1 : Envoi de l'email
+export const sendAuthEmail = createAsyncThunk<
+  string, 
+  string, 
   { rejectValue: string }
 >(
-  'auth/loginUser',
-  ({ email, token }, { rejectWithValue }) => {
-    if (
-      email === 'test@cubicle.com' &&
-      token === '123456'
-    ) {
-      const user: User = {
-        user_id: 1,
-        username: 'testuser',
-        first_name: 'Test',
-        last_name: 'User',
-        email,
-        avatar_url: 'https://example.com/avatar.png',
-        phone_number: '+123456789',
-        followers: [],
-      };
-
-      return user;
+  'auth/sendEmail',
+  async (email, { rejectWithValue }) => {
+    try {
+      await axios.post(`${API_URL}/auth/send-email`, { email });
+      return email;
+    } catch (err) {
+      if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
+        return rejectWithValue(err.response.data.message);
+      }
+      return rejectWithValue("Une erreur est survenue lors de l'envoi");
     }
-
-    return rejectWithValue('Email ou mot de passe incorrect');
   }
 );
+
+export const verifyPasscode = createAsyncThunk<
+  User,
+  { email: string; code: string },
+  { rejectValue: string }
+>(
+  'auth/verifyPasscode',
+  async ({ email, code }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post<User>(`${API_URL}/auth/verify-code`, { email, code });
+      return response.data;
+    } catch (err) {
+      if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
+        return rejectWithValue(err.response.data.message);
+      }
+      return rejectWithValue("Code incorrect ou expiré");
+    }
+  }
+);
+
+// --- Slice ---
 
 const authSlice = createSlice({
   name: 'auth',
@@ -65,57 +74,48 @@ const authSlice = createSlice({
   reducers: {
     logout(state) {
       state.user = null;
+      state.emailSent = false;
+      state.currentEmail = null;
+      state.error = null;
     },
+    resetError(state) {
+      state.error = null;
+    }
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginUser.pending, (state) => {
+      // Phase 1 : sendAuthEmail
+      .addCase(sendAuthEmail.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action: PayloadAction<User>) => {
+      .addCase(sendAuthEmail.fulfilled, (state, action: PayloadAction<string>) => {
+        state.loading = false;
+        state.emailSent = true;
+        state.currentEmail = action.payload;
+      })
+      .addCase(sendAuthEmail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload ?? "Erreur inconnue";
+      })
+
+      // Phase 2 : verifyPasscode
+      .addCase(verifyPasscode.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyPasscode.fulfilled, (state, action: PayloadAction<User>) => {
         state.loading = false;
         state.user = action.payload;
+        state.emailSent = false;
+        state.currentEmail = null;
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(verifyPasscode.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload ?? 'Erreur inconnue';
+        state.error = action.payload ?? "Erreur de validation";
       });
   },
 });
 
-export const signupUser = createAsyncThunk<
-  User,
-  SignupData,
-  { rejectValue: string }
->(
-  'auth/signup',
-
-  (userData, { rejectWithValue }) => {
-    try {
-      console.log('Données envoyées:', userData);
-
-      const newUser: User = {
-        user_id: 1,
-        username: userData.username,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        email: userData.email,
-        avatar_url: undefined,
-        phone_number: undefined,
-        followers: [],
-      };
-
-      return newUser;
-    } catch (err) {
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue("Erreur lors de l'inscription");
-    }
-  }
-);
-
-
-export const { logout } = authSlice.actions;
+export const { logout, resetError } = authSlice.actions;
 export default authSlice.reducer;

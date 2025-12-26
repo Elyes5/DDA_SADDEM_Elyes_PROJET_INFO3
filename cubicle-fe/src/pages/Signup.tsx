@@ -18,8 +18,7 @@ import {
   Grid
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useAppDispatch, useAppSelector } from '../hooks/hooks';
-import { signupUser } from '../state/slices/authSlice';
+import { useAppSelector } from '../hooks/hooks';
 
 const CubicleLogo = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="white" {...props}>
@@ -40,7 +39,6 @@ const Signup: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.auth);
   const theme = useTheme();
 
@@ -58,9 +56,7 @@ const Signup: React.FC = () => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const finalAvatarUrl = "url_du_cloud_ici";
 
-    void dispatch(signupUser({ ...formData, avatar_url: finalAvatarUrl }));
   };
 
   const modernInputStyle = {

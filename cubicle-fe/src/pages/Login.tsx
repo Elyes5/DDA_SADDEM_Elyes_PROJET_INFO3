@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import type { ChangeEvent, FormEvent, SVGProps } from 'react';
-import {Link as RouterLink} from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import type { FormEvent, SVGProps } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -14,10 +14,12 @@ import {
   useTheme,
   InputLabel,
   Link,
-  Stack
+  Stack,
+  IconButton
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks.ts';
-import { loginUser } from '../state/slices/authSlice.ts';
+import { sendAuthEmail, verifyPasscode, logout } from '../state/slices/authSlice.ts';
 
 const CubicleLogo = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -26,18 +28,34 @@ const CubicleLogo = (props: SVGProps<SVGSVGElement>) => (
 );
 
 const Login: React.FC = () => {
-  const [credentials, setCredentials] = useState({ email: '', token: '' });
+  const [email, setEmail] = useState('');
+  const [passcode, setPasscode] = useState('');
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();
   const theme = useTheme();
+  
+  const { loading, error, emailSent, currentEmail, user } = useAppSelector((state) => state.auth);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setCredentials({ ...credentials, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    if (user) {
+      void navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    void dispatch(loginUser(credentials));
+    if (!emailSent) {
+      void dispatch(sendAuthEmail(email));
+    } else {
+      if (currentEmail) {
+        void dispatch(verifyPasscode({ email: currentEmail, code: passcode }));
+      }
+    }
+  };
+
+  const handleBack = () => {
+    dispatch(logout()); // Réinitialise l'état emailSent et currentEmail
+    setPasscode('');
   };
 
   const modernInputStyle = {
@@ -82,8 +100,18 @@ const Login: React.FC = () => {
             backdropFilter: 'blur(20px)',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
             textAlign: 'center',
+            position: 'relative'
           }}
         >
+          {emailSent && (
+            <IconButton 
+              onClick={handleBack}
+              sx={{ position: 'absolute', left: 20, top: 20 }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+          )}
+
           <Avatar sx={{ m: '0 auto', bgcolor: 'primary.main', width: 64, height: 64, p: 1.5, mb: 2 }}>
             <CubicleLogo width="100%" height="100%" />
           </Avatar>
@@ -91,8 +119,11 @@ const Login: React.FC = () => {
           <Typography variant="h4" sx={{ fontWeight: 900, color: '#1e3a8a', mb: 0.5 }}>
             Cubicle
           </Typography>
+          
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 4, fontWeight: 500 }}>
-            Heureux de vous revoir !
+            {!emailSent 
+              ? "Heureux de vous revoir !" 
+              : `Code envoyé à ${currentEmail}`}
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 4 }}>{error}</Alert>}
@@ -100,15 +131,33 @@ const Login: React.FC = () => {
           <Box component="form" onSubmit={handleSubmit} noValidate>
             <Stack spacing={2.5}>
               <Box sx={{ textAlign: 'left' }}>
-                <InputLabel sx={labelStyle}>Adresse Email</InputLabel>
-                <TextField
-                  fullWidth
-                  name="email"
-                  placeholder="nom@exemple.com"
-                  value={credentials.email}
-                  onChange={handleChange}
-                  sx={modernInputStyle}
-                />
+                <InputLabel sx={labelStyle}>
+                  {!emailSent ? "Adresse Email" : "Code de vérification"}
+                </InputLabel>
+                
+                {!emailSent ? (
+                  <TextField
+                    fullWidth
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="nom@exemple.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    sx={modernInputStyle}
+                  />
+                ) : (
+                  <TextField
+                    fullWidth
+                    name="passcode"
+                    type="text"
+                    autoFocus
+                    placeholder="123456"
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    sx={modernInputStyle}
+                  />
+                )}
               </Box>
 
               <Button
@@ -131,28 +180,34 @@ const Login: React.FC = () => {
                   }
                 }}
               >
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Se connecter'}
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  !emailSent ? 'Continuer' : 'Vérifier le code'
+                )}
               </Button>
             </Stack>
 
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                Pas encore de compte ?{' '}
-                <Link
-                  to="/signup"
-                  underline="hover"
-                  component={RouterLink}
-                  sx={{
-                    color: '#1e40af',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    '&:hover': { color: '#3b82f6' }
-                  }}
-                >
-                  S'inscrire
-                </Link>
-              </Typography>
-            </Box>
+            {!emailSent && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                  Pas encore de compte ?{' '}
+                  <Link
+                    to="/signup"
+                    underline="hover"
+                    component={RouterLink}
+                    sx={{
+                      color: '#1e40af',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      '&:hover': { color: '#3b82f6' }
+                    }}
+                  >
+                    S'inscrire
+                  </Link>
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Paper>
       </Container>

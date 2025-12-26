@@ -1,4 +1,4 @@
-from extensions import db
+from extensions.otp_ext import db
 
 class Topic(db.Model):
     __tablename__ = 'topic'
