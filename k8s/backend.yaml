@@ -24,7 +24,7 @@ spec:
                 name: backend-secrets
           env:
             - name: FLASK_ENV
-              value: PROD
+              value: production
 ---
 apiVersion: v1
 kind: Service
