@@ -6,6 +6,7 @@ from urllib.parse import quote_plus
 from auth.otp_auth import auth_bp
 from extensions.otp_ext import db, mail, jwt
 from config.config_env import config_map
+from config.config_ca import init_ssl
 from models.user import User
 from models.topic import Topic
 from models.snippet import Snippet
@@ -34,6 +35,7 @@ app.config.from_object('config.config_smtp')
 app.config.from_object("config.config_storage")
 
 # ===== INITIALIZE EXTENSIONS =====
+init_ssl(app)
 db.init_app(app)
 mail.init_app(app)
 jwt.init_app(app)
