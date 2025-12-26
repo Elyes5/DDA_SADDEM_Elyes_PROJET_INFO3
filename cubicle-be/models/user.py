@@ -1,4 +1,4 @@
-from extensions import db
+from extensions.otp_ext import db
 from datetime import datetime, timezone
 
 user_follower = db.Table('user_follower',
@@ -18,11 +18,11 @@ class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    bio = db.Column(db.Text)
-    avatar_url = db.Column(db.String(255))
-    phone_number = db.Column(db.String(20))
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
+    bio = db.Column(db.Text, nullable=True)
+    avatar_url = db.Column(db.String(255), nullable=True)
+    phone_number = db.Column(db.String(20), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     is_verified = db.Column(db.Boolean, default=False)
     join_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

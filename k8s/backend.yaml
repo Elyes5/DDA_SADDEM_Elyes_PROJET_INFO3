@@ -19,6 +19,9 @@ spec:
           image: ghcr.io/elyes5/dda_saddem_elyes_projet_info3:latest
           ports:
             - containerPort: 5000
+          envFrom:
+            - secretRef:
+                name: backend-secrets
           env:
             - name: FLASK_ENV
               value: PROD
