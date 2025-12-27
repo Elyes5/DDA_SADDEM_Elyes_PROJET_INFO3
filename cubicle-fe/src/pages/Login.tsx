@@ -54,7 +54,7 @@ const Login: React.FC = () => {
   };
 
   const handleBack = () => {
-    dispatch(logout()); // Réinitialise l'état emailSent et currentEmail
+    dispatch(logout());
     setPasscode('');
   };
 
