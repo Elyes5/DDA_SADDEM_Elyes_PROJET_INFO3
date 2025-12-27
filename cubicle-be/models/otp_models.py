@@ -1,10 +1,5 @@
-from datetime import datetime as dt
-import datetime
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 from extensions.otp_ext import db
-
-# Models
-from datetime import datetime, timezone
 
 class OTP(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -15,4 +10,9 @@ class OTP(db.Model):
 
     # Check for code validity
     def is_valid(self):
-        return dt.now(datetime.UTC).replace(tzinfo=None) < self.created_at + timedelta(minutes=10)
+        now = datetime.now(timezone.utc)
+        created_at = self.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+
+        return now < created_at + timedelta(minutes=10)
