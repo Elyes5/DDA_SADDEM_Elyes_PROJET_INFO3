@@ -19,7 +19,6 @@ spec:
           image: ghcr.io/elyes5/dda_saddem_elyes_projet_info3:latest
           ports:
             - containerPort: 5000
-          # 1. On monte le fichier ici
           volumeMounts:
             - name: ca-volume
               mountPath: "/etc/ssl/certs/db-ca"
@@ -30,10 +29,8 @@ spec:
           env:
             - name: FLASK_ENV
               value: production
-            # 2. On indique au code Python où se trouve le fichier
             - name: DB_CA_PATH
               value: "/etc/ssl/certs/db-ca/ca.pem"
-      # 3. On définit le volume lié au secret
       volumes:
         - name: ca-volume
           secret:
@@ -46,7 +43,31 @@ metadata:
 spec:
   selector:
     app: backend
+  type: ClusterIP
   ports:
-    - port: 5000
+    - port: 80
       targetPort: 5000
-  type: LoadBalancer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+    - hosts:
+        - cubicle.cubicleapp.tech
+      secretName: cubicleapp-tls
+  rules:
+    - host: cubicle.cubicleapp.tech
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80

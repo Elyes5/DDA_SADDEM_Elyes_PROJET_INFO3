@@ -33,6 +33,9 @@ app.config.from_object('config.config_smtp')
 # ===== AZURE CONFIG =====
 app.config.from_object("config.config_storage")
 
+# ===== JWT COOKIES =====
+app.config.from_object("config.config_jwt_cookies")
+
 # ===== INITIALIZE EXTENSIONS =====
 init_ssl(app)
 db.init_app(app)
