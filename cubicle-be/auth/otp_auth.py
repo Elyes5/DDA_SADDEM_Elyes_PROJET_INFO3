@@ -146,7 +146,7 @@ def register_user():
         avatar_url=avatar_url,
         phone_number=phone_number,
         is_verified=False,
-        join_date=datetime.now()  # local time
+        join_date=datetime.now(timezone.utc)  # local time
     )
 
     # Save to database
