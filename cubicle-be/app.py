@@ -1,8 +1,7 @@
 from flask import Flask
 from dotenv import load_dotenv
 import os
-from urllib.parse import quote_plus
-
+from flask_migrate import Migrate
 from auth.otp_auth import auth_bp
 from extensions.otp_ext import db, mail, jwt
 from config.config_env import config_map
@@ -40,9 +39,8 @@ db.init_app(app)
 mail.init_app(app)
 jwt.init_app(app)
 
-# ===== CREATE TABLES =====
-with app.app_context():
-    db.create_all()
+# ===== Setup Flask migrations =====
+migrate = Migrate(app, db)
 
 # ===== BLUEPRINTS =====
 app.register_blueprint(auth_bp, url_prefix='/api/auth')

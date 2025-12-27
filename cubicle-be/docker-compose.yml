@@ -1,22 +1,48 @@
 version: "3.9"
-
+# Concurrency on who creates first : DB or Flask => Switch to migrations
 services:
   web:
     build: .
     ports:
       - "5000:5000"
     environment:
-      DATABASE_URL: mysql://mysql:mysql@db:3306/app_db
+      DATABASE_URL: mysql+pymysql://${DEV_DB_USER}:${DEV_DB_PASSWORD}@db:3306/${DEV_DB_NAME}
     depends_on:
-      - db
-
+      db:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+  migration:
+      build: .
+      volumes:
+        - .:/app
+      environment:
+        FLASK_APP: app.py
+        DATABASE_URL: mysql+pymysql://${DEV_DB_USER}:${DEV_DB_PASSWORD}@db:3306/${DEV_DB_NAME}
+      depends_on:
+        db:
+          condition: service_healthy
+      command: >
+        sh -c "
+          echo 'Waiting for DB...' &&
+          until python -c 'import socket; s = socket.socket(); s.connect((\"db\", 3306))' 2>/dev/null; do
+            sleep 1
+          done &&
+          echo 'DB ready !' &&
+          if [ ! -d 'migrations' ]; then flask db init; fi &&
+          flask db migrate -m 'Auto-migration' &&
+          flask db upgrade
+        "
   db:
     image: mysql:8.0
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: app_db
-      MYSQL_USER: mysql
-      MYSQL_PASSWORD: mysql
+      MYSQL_ROOT_PASSWORD: ${DEV_DB_PASSWORD}
+      MYSQL_DATABASE: ${DEV_DB_NAME}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DEV_DB_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "3306:3306"
