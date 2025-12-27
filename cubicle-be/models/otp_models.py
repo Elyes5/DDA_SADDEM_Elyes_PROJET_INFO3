@@ -12,7 +12,6 @@ class OTP(db.Model):
     code = db.Column(db.String(6), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     attempts = db.Column(db.Integer, default=0)
-    is_used = db.Column(db.Boolean, default=False) # Recommandé pour invalider après usage
 
     # Check for code validity
     def is_valid(self):
