@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import os
 from flask import request, jsonify, Blueprint
 from flask_mail import Message
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, set_access_cookies
 import secrets
 from sqlalchemy.exc import IntegrityError
 from flask import current_app
@@ -27,13 +27,13 @@ def send_email(sender, recipients, code, subject="Cubicle One-Time Password"):
         year=current_year
     )
 
-    msg = Message(
+    message = Message(
         subject=subject,
         sender=sender,
         recipients=recipients,
         html=html_content
     )
-    mail.send(msg)
+    mail.send(message)
 auth_bp = Blueprint('auth', __name__)
 
 # Login
@@ -43,15 +43,15 @@ def email_login():
     email = data.get('email')
 
     if not email:
-        return jsonify({"msg": "Email is required."}), 400
+        return jsonify({"message": "Email is required."}), 400
 
     email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     if not re.match(email_regex, email):
-        return jsonify({"msg": "Invalid email format."}), 400
+        return jsonify({"message": "Invalid email format."}), 400
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({"msg": "Email is not registered, please sign up."}), 400
+        return jsonify({"message": "Email is not registered, please sign up."}), 400
 
     # Generate OTP code
     otp_code = f"{secrets.randbelow(100000):06d}"
@@ -61,7 +61,7 @@ def email_login():
     db.session.add(OTP(email=email, code=otp_code))
     db.session.commit()
 
-    # Send OTP email via Mailjet SMTP, let's note that sender is configured on the config/config_smtp
+    # Send OTP email via Infomaniak SMTP, let's note that sender is configured on the config/config_smtp
     try:
         send_email(
             sender=current_app.config["MAIL_DEFAULT_SENDER"],
@@ -70,12 +70,12 @@ def email_login():
             subject="Cubicle One-Time Password"
         )
     except Exception as e:
-        return jsonify({"msg": "Error sending email", "error": str(e)}), 500
+        return jsonify({"message": "Error sending email", "error": str(e)}), 500
 
     if os.getenv("FLASK_ENV", "development") != "production":
         print(f"[DEV OTP] {email}: {otp_code}")
 
-    return jsonify({"msg": "OTP code sent!"}), 200
+    return jsonify({"message": "OTP code sent!"}), 200
 
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
@@ -101,12 +101,12 @@ def register_user():
 
     # Validate required fields
     if not username or not email or not first_name or not last_name:
-        return jsonify({"msg": "Username, email, first name, and last name are required."}), 400
+        return jsonify({"message": "Username, email, first name, and last name are required."}), 400
 
     # Validate email format
     email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     if not re.match(email_regex, email):
-        return jsonify({"msg": "Invalid email format."}), 400
+        return jsonify({"message": "Invalid email format."}), 400
 
     # Handle avatar file
     avatar_url = None
@@ -155,15 +155,14 @@ def register_user():
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return jsonify({"msg": "Username or email already exists."}), 400
+        return jsonify({"message": "Username or email already exists."}), 400
 
     return jsonify({
-        "msg": "User registered successfully. Please verify your email.",
+        "message": "User registered successfully. Please verify your email.",
         "user_id": new_user.user_id,
         "avatar_url": avatar_url
     }), 201
 
-# Verify Code
 # Verify Code with 3 attempts limit
 @auth_bp.route('/verify-code', methods=['POST'])
 def verify_code():
@@ -172,70 +171,70 @@ def verify_code():
     code = data.get('code')
 
     if not email or not code:
-        return jsonify({"msg": "Missing email or code"}), 400
+        return jsonify({"message": "Missing email or code"}), 400
 
-    # Get the OTP entry
+    # 1. Récupération de l'OTP
     otp_entry = OTP.query.filter_by(email=email).first()
     if not otp_entry:
-        return jsonify({"msg": "Incorrect email or code"}), 400
+        return jsonify({"message": "Incorrect email or code"}), 400
 
-    # Initialize attempts if not present
+    # 2. Gestion des tentatives (max 3)
     if otp_entry.attempts is None:
         otp_entry.attempts = 0
 
-    # Check if attempts exceeded
     if otp_entry.attempts >= 3:
         db.session.delete(otp_entry)
         db.session.commit()
-        return jsonify({"msg": "Too many failed attempts. OTP is now invalid."}), 403
+        return jsonify({"message": "Too many failed attempts. OTP is now invalid."}), 403
 
-    # Check the code
+    # 3. Vérification de la validité du code
     if otp_entry.code != code:
         otp_entry.attempts += 1
         db.session.commit()
         remaining = max(0, 3 - otp_entry.attempts)
-        return jsonify({"msg": f"Incorrect code. {remaining} attempts left."}), 401
+        return jsonify({"message": f"Incorrect code. {remaining} attempts left."}), 401
 
-    # Check if OTP is still valid
+    # 4. Vérification de l'expiration (via votre méthode is_valid corrigée)
     if not otp_entry.is_valid():
         db.session.delete(otp_entry)
         db.session.commit()
-        return jsonify({"msg": "The code has expired"}), 401
+        return jsonify({"message": "The code has expired"}), 401
 
-    # Get the user
+    # 5. Récupération et vérification de l'utilisateur
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({"msg": "User not found"}), 400
+        return jsonify({"message": "User not found"}), 400
 
-    # Mark user as verified
+    # 6. Mise à jour du statut de vérification
     if not user.is_verified:
         user.is_verified = True
-        db.session.commit()
 
-    # Create JWT token
-    access_token = create_access_token(identity=user.user_id)
-    # Delete OTP after successful verification
-    db.session.delete(otp_entry)
-    db.session.commit()
+    # 7. Création du JWT (Identity doit être une string)
+    access_token = create_access_token(identity=str(user.user_id))
 
-    return jsonify({
-        "msg": "User verified successfully",
-        "access_token": access_token,
+    # 8. Préparation de la réponse (sans le token dans le JSON)
+    response = jsonify({
+        "message": "User verified successfully",
         "user": {
             "id": user.user_id,
             "email": user.email,
+            "username": user.username,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "avatar_url": user.avatar_url,
             "is_verified": user.is_verified,
             "phone_number": user.phone_number,
-            "username": user.username,
             "join_date": user.join_date,
             "last_login": user.last_login,
-            "bio": user.bio,
-            "badge": user.badge,
-            "snippets": user.snippets,
-            "reviews": user.reviews,
-            "liked_snippets": user.liked_snippets
+            "bio": user.bio
         }
-    }), 200
+    })
+
+    # 9. Nettoyage de la base de données
+    db.session.delete(otp_entry)
+    db.session.commit()
+
+    # 10. Injection du cookie JWT dans les headers de la réponse
+    set_access_cookies(response, access_token)
+
+    return response, 200
