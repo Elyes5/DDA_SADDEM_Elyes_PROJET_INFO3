@@ -137,5 +137,4 @@ const MainFeed : React.FC = () => {
     </ThemeProvider>
   );
 }
-
 export default MainFeed;
