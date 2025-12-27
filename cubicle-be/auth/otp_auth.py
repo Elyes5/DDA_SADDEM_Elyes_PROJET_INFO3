@@ -227,6 +227,15 @@ def verify_code():
             "first_name": user.first_name,
             "last_name": user.last_name,
             "avatar_url": user.avatar_url,
-            "is_verified": user.is_verified
+            "is_verified": user.is_verified,
+            "phone_number": user.phone_number,
+            "username": user.username,
+            "join_date": user.join_date,
+            "last_login": user.last_login,
+            "bio": user.bio,
+            "badge": user.badge,
+            "snippets": user.snippets,
+            "reviews": user.reviews,
+            "liked_snippets": user.liked_snippets
         }
     }), 200
