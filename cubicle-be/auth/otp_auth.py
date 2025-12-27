@@ -226,7 +226,11 @@ def verify_code():
             "phone_number": user.phone_number,
             "join_date": user.join_date,
             "last_login": user.last_login,
-            "bio": user.bio
+            "bio": user.bio,
+            "snippets": user.snippets,
+            "badge": user.badge,
+            "liked_snippets": user.liked_snippets,
+            "followers": user.followers
         }
     })
 
