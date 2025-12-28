@@ -84,6 +84,7 @@ ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 @auth_bp.route('/register', methods=['POST'])
 def register_user():
     """
@@ -91,7 +92,6 @@ def register_user():
     - Local dev: store in uploads/avatars/
     - Production: store in Azure Blob Storage container
     """
-    # Accept multipart/form-data for file upload
     data = request.form
     username = data.get('username')
     email = data.get('email')
@@ -112,7 +112,12 @@ def register_user():
     # Handle avatar file
     avatar_url = None
     file = request.files.get('avatar')
-    if file and allowed_file(file.filename):
+
+    if file:
+        # Check if extension is valid
+        if not allowed_file(file.filename):
+            return jsonify({"message": "Invalid file extension. Please upload an image (png, jpg, jpeg, gif)."}), 400
+
         # Generate a unique filename
         filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
 
@@ -122,7 +127,7 @@ def register_user():
             os.makedirs(upload_folder, exist_ok=True)
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
-            avatar_url = f"/uploads/avatars/{filename}"  # relative URL for dev
+            avatar_url = f"/uploads/avatars/{filename}"
         else:
             # Production: Azure Blob Storage
             blob_service_client = BlobServiceClient.from_connection_string(
@@ -147,7 +152,7 @@ def register_user():
         avatar_url=avatar_url,
         phone_number=phone_number,
         is_verified=False,
-        join_date=datetime.now(timezone.utc)  # local time
+        join_date=datetime.now(timezone.utc)
     )
 
     # Save to database
