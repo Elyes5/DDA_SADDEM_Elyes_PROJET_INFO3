@@ -1,8 +1,8 @@
 """Auto-migration
 
-Revision ID: 07a03da1d656
+Revision ID: 493d1d3d75fd
 Revises: 
-Create Date: 2025-12-27 01:51:46.258160
+Create Date: 2025-12-27 22:22:40.161425
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '07a03da1d656'
+revision = '493d1d3d75fd'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,6 +34,9 @@ def upgrade():
     sa.Column('attempts', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    with op.batch_alter_table('otp', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_otp_email'), ['email'], unique=False)
+
     op.create_table('topic',
     sa.Column('topic_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
@@ -121,6 +124,9 @@ def downgrade():
     op.drop_table('snippet')
     op.drop_table('user')
     op.drop_table('topic')
+    with op.batch_alter_table('otp', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_otp_email'))
+
     op.drop_table('otp')
     op.drop_table('badge')
     # ### end Alembic commands ###

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import timezone
 import os
 from flask import request, jsonify, Blueprint
 from flask_mail import Message
@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 import uuid
 from datetime import datetime
 import re
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from azure.storage.blob import BlobServiceClient
 from flask import render_template
 # Functions
@@ -54,7 +55,7 @@ def email_login():
         return jsonify({"message": "Email is not registered, please sign up."}), 400
 
     # Generate OTP code
-    otp_code = f"{secrets.randbelow(100000):06d}"
+    otp_code = f"{secrets.randbelow(1_000_000):06d}"
 
     # Clean old OTPs
     OTP.query.filter_by(email=email).delete()
@@ -158,9 +159,7 @@ def register_user():
         return jsonify({"message": "Username or email already exists."}), 400
 
     return jsonify({
-        "message": "User registered successfully. Please verify your email.",
-        "user_id": new_user.user_id,
-        "avatar_url": avatar_url
+        "message": "User registered successfully. Please verify your email."
     }), 201
 
 # Verify Code with 3 attempts limit
@@ -217,20 +216,20 @@ def verify_code():
         "message": "User verified successfully",
         "user": {
             "id": user.user_id,
-            "email": user.email,
             "username": user.username,
+            "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "avatar_url": user.avatar_url,
-            "is_verified": user.is_verified,
-            "phone_number": user.phone_number,
-            "join_date": user.join_date,
-            "last_login": user.last_login,
             "bio": user.bio,
-            "snippets": user.snippets,
-            "badge": user.badge,
-            "liked_snippets": user.liked_snippets,
-            "followers": user.followers
+            "avatar_url": user.avatar_url,
+            "phone_number": user.phone_number,
+            "is_verified": user.is_verified,
+            "join_date": user.join_date.isoformat() if user.join_date else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None,
+            "badge": user.badge.name if user.badge else None,
+            "snippets_ids": [s.snippet_id for s in user.snippets],
+            "liked_snippets_ids": [s.snippet_id for s in user.liked_snippets],
+            "followers": user.followers.count()
         }
     })
 
@@ -242,3 +241,35 @@ def verify_code():
     set_access_cookies(response, access_token)
 
     return response, 200
+
+
+# Check if the user has a valid JWT cookie and return their data.
+@auth_bp.route('/me', methods=['GET'])
+@jwt_required()
+def get_current_user():
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    # Return user
+    return jsonify({
+        "user": {
+            "id": user.user_id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "bio": user.bio,
+            "avatar_url": user.avatar_url,
+            "phone_number": user.phone_number,
+            "is_verified": user.is_verified,
+            "join_date": user.join_date.isoformat() if user.join_date else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None,
+            "badge": user.badge.name if user.badge else None,
+            "snippets_ids": [s.snippet_id for s in user.snippets],
+            "liked_snippets_ids": [s.snippet_id for s in user.liked_snippets],
+            "followers_count": user.followers.count()
+        }
+    }), 200
