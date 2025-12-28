@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from urllib.parse import quote_plus
 
 load_dotenv()
-
+# Construct database URL depending on the environment
 def build_db_uri(prefix):
     password = os.getenv(f"{prefix}_DB_PASSWORD") or ""
     password = quote_plus(password)

@@ -177,12 +177,12 @@ def verify_code():
     if not email or not code:
         return jsonify({"message": "Missing email or code"}), 400
 
-    # 1. Récupération de l'OTP
+    # 1. Recover OTP
     otp_entry = OTP.query.filter_by(email=email).first()
     if not otp_entry:
         return jsonify({"message": "Incorrect email or code"}), 400
 
-    # 2. Gestion des tentatives (max 3)
+    # 2. Manage attempts (max 3)
     if otp_entry.attempts is None:
         otp_entry.attempts = 0
 
@@ -191,32 +191,32 @@ def verify_code():
         db.session.commit()
         return jsonify({"message": "Too many failed attempts. OTP is now invalid."}), 403
 
-    # 3. Vérification de la validité du code
+    # 3. Verify if the code is correct or not
     if otp_entry.code != code:
         otp_entry.attempts += 1
         db.session.commit()
         remaining = max(0, 3 - otp_entry.attempts)
         return jsonify({"message": f"Incorrect code. {remaining} attempts left."}), 401
 
-    # 4. Vérification de l'expiration (via votre méthode is_valid corrigée)
+    # 4. Verify is the OTP is valid (The otp should only be valid for 10 minutes)
     if not otp_entry.is_valid():
         db.session.delete(otp_entry)
         db.session.commit()
         return jsonify({"message": "The code has expired"}), 401
 
-    # 5. Récupération et vérification de l'utilisateur
+    # 5. Get and verify the user.
     user = User.query.filter_by(email=email).first()
     if not user:
         return jsonify({"message": "User not found"}), 400
 
-    # 6. Mise à jour du statut de vérification
+    # 6. Update user status to verified
     if not user.is_verified:
         user.is_verified = True
 
-    # 7. Création du JWT (Identity doit être une string)
+    # 7. Create the JWT (using user_id as identity)
     access_token = create_access_token(identity=str(user.user_id))
 
-    # 8. Préparation de la réponse (sans le token dans le JSON)
+    # 8. Prepare the response (the token won't be returned, it will be stored in cookies)
     response = jsonify({
         "message": "User verified successfully",
         "user": {
@@ -238,7 +238,7 @@ def verify_code():
         }
     })
 
-    # 9. Nettoyage de la base de données
+    # 9. Clean up the database and remove the old OTP
     db.session.delete(otp_entry)
     db.session.commit()
 

@@ -46,12 +46,10 @@ const Signup: React.FC = () => {
   const { loading, error } = useAppSelector((state) => state.auth);
   const theme = useTheme();
 
-  // Handle standard text input changes
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle image file selection and local preview generation
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -63,7 +61,6 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Construct FormData to handle multipart/form-data upload (required for files)
     const data = new FormData();
     data.append('username', formData.username);
     data.append('email', formData.email);
@@ -76,16 +73,13 @@ const Signup: React.FC = () => {
       data.append('avatar', avatarFile);
     }
 
-    // Dispatch registration action
     const resultAction = await dispatch(registerUser(data));
     
-    // Redirect to login on success
     if (registerUser.fulfilled.match(resultAction)) {
       void navigate('/login');
     }
   };
 
-  // Modern UI input styles
   const modernInputStyle = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '50px',
@@ -155,7 +149,6 @@ const Signup: React.FC = () => {
                 </Grid>
               </Grid>
 
-              {/* Identity Fields Row */}
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Box sx={{ textAlign: 'left' }}>

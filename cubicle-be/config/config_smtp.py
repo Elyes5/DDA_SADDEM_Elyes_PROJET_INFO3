@@ -9,11 +9,11 @@ MAIL_PORT = int(os.getenv("SMTP_PORT"))
 MAIL_USE_TLS = os.getenv("SMTP_USE_TLS").lower() == "true"
 MAIL_USE_SSL = os.getenv("SMTP_USE_SSL").lower() == "true"
 
-# Authentification (votre email complet et son mot de passe)
+# Authentication (Email and password) for Infomaniak
 MAIL_USERNAME = os.getenv("SMTP_USER")
 MAIL_PASSWORD = os.getenv("SMTP_PASSWORD")
 
-# Expéditeur par défaut
+# Default email sender
 MAIL_DEFAULT_SENDER = os.getenv("SMTP_DEFAULT_SENDER")
 
 MAIL_MAX_EMAILS = None
