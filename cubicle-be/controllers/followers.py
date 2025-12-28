@@ -34,8 +34,9 @@ def add_follower():
     following = User.query.filter_by(email=data.get('following')).first()
 
     if follower in following.followers.all():
-        return jsonify({"message": "User already following the target"}), 401
-    
+        following.followers.remove(follower)
+        db.session.commit()
+        return jsonify({"message": "User unfollowed"}), 200
     following.followers.append(follower)
     db.session.commit()
     return jsonify({"message": "User followed"}), 200
