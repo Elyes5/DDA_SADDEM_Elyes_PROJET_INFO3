@@ -111,7 +111,6 @@ const Login: React.FC = () => {
             position: 'relative'
           }}
         >
-          {/* Back button visible only during OTP verification phase */}
           {emailSent && (
             <IconButton 
               onClick={handleBack}
@@ -135,7 +134,6 @@ const Login: React.FC = () => {
               : `Code envoyé à ${currentEmail}`}
           </Typography>
 
-          {/* Display API error messages */}
           {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 4 }}>{error}</Alert>}
 
           <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -199,7 +197,6 @@ const Login: React.FC = () => {
               </Button>
             </Stack>
 
-            {/* Signup redirection link */}
             {!emailSent && (
               <Box sx={{ mt: 4 }}>
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>

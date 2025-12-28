@@ -3,10 +3,7 @@ from flask_cors import CORS
 
 
 def setup_cors(app):
-    """
-    Centralized CORS configuration using environment variables.
-    """
-    # 1. Determine environment (default to development)
+    # Determine environment (default to development)
     env = os.getenv("FLASK_ENV", "development")
     prod_url = os.getenv("PROD_FRONT_END_ORIGIN", "development")
     dev_url = os.getenv("DEV_FRONT_END_ORIGIN", "development")
@@ -15,7 +12,7 @@ def setup_cors(app):
     else:
         origins = [dev_url]
 
-    # 3. Apply CORS settings
+    # Apply CORS settings
     CORS(app, resources={
         r"/api/*": {
             "origins": origins,

@@ -1,14 +1,14 @@
-# On utilise une image légère de Python
+# Use lightweight Python image
 FROM python:3.12-slim
-# On va travailler sur le répertoire app au niveau du conteneur
+# Work on the app directory of the container
 WORKDIR /app
-# Copie de requirements.txt vers le conteneur
+# Make a copy of requirements.txt inside the container
 COPY requirements.txt .
-# Installation des dépendances
+# Install the requirements using PIP
 RUN pip install --no-cache-dir -r requirements.txt
-# Copie des fichiers
+# Copy the files
 COPY . .
-# Lancement du serveur
+# Expose port 5000
 EXPOSE 5000
-
+# Start the app using guincorn since it's better to use it for production
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]

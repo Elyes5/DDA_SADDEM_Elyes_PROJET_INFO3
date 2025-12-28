@@ -9,7 +9,6 @@ import MainFeed from './pages/MainFeed';
 import './App.css';
 import { useAppSelector } from './hooks/hooks';
 import { Box, CircularProgress } from '@mui/material';
-// App.tsx
 function App() {
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((state) => state.auth);
@@ -17,7 +16,7 @@ function App() {
   useEffect(() => {
     void dispatch(checkAuth());
   }, [dispatch]);
-
+  // Handling routing depending on protected/public pages.
   return (
     <Router>
       {loading ? (
