@@ -39,3 +39,14 @@ class User(db.Model):
         secondaryjoin=(user_follower.c.follower_id == user_id),
         backref=db.backref('following', lazy='dynamic'), lazy='dynamic'
     )
+
+    def to_dict(self):
+        return {
+            "user_id": self.user_id,
+            "username": self.username,
+            "email": self.email,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "bio": self.bio,
+            "avatar_url": self.avatar_url
+        }
