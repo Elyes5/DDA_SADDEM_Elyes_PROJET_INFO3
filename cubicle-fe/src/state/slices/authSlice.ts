@@ -1,13 +1,9 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
-import type { User } from '../../models/User.ts';
+import { authService, type AuthResponse } from '../../services/AuthService';
+import type { User } from '../../models/User';
+import type ApiError from '../../interfaces/ApiError';
 
-const API_URL = 'https://ton-api.com';
-
-interface ApiError {
-  message: string;
-}
 
 interface AuthState {
   user: User | null;
@@ -19,7 +15,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  loading: false,
+  loading: true,
   error: null,
   emailSent: false,
   currentEmail: null,
@@ -27,16 +23,35 @@ const initialState: AuthState = {
 
 // --- Thunks ---
 
-// Phase 1 : Envoi de l'email
+export const checkAuth = createAsyncThunk<
+  User,
+  void,
+  { rejectValue: string }
+>(
+  'auth/checkAuth',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authService.checkAuth();
+      if (response.user) {
+        return response.user;
+      }
+      return rejectWithValue("Session non trouvée");
+    } catch {
+
+      return rejectWithValue("Aucune session active");
+    }
+  }
+);
+
 export const sendAuthEmail = createAsyncThunk<
-  string, 
-  string, 
+  string,
+  string,
   { rejectValue: string }
 >(
   'auth/sendEmail',
   async (email, { rejectWithValue }) => {
     try {
-      await axios.post(`${API_URL}/auth/send-email`, { email });
+      await authService.login(email);
       return email;
     } catch (err) {
       if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
@@ -55,13 +70,49 @@ export const verifyPasscode = createAsyncThunk<
   'auth/verifyPasscode',
   async ({ email, code }, { rejectWithValue }) => {
     try {
-      const response = await axios.post<User>(`${API_URL}/auth/verify-code`, { email, code });
-      return response.data;
+      const response = await authService.verifyCode(email, code);
+      if (response.user) {
+        return response.user;
+      }
+      return rejectWithValue("Utilisateur non trouvé dans la réponse");
     } catch (err) {
       if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
         return rejectWithValue(err.response.data.message);
       }
       return rejectWithValue("Code incorrect ou expiré");
+    }
+  }
+);
+
+export const registerUser = createAsyncThunk<
+  AuthResponse,
+  FormData,
+  { rejectValue: string }
+>(
+  'auth/register',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await authService.register(formData);
+      return response;
+    } catch (err) {
+      if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
+        return rejectWithValue(err.response.data.message);
+      }
+      return rejectWithValue("Erreur lors de l'inscription");
+    }
+  }
+);
+
+export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
+        return rejectWithValue(err.response.data.message);
+      }
+      return rejectWithValue("Erreur lors de la déconnexion");
     }
   }
 );
@@ -72,19 +123,26 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    logout(state) {
-      state.user = null;
-      state.emailSent = false;
-      state.currentEmail = null;
-      state.error = null;
-    },
     resetError(state) {
       state.error = null;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Phase 1 : sendAuthEmail
+      // checkAuth
+      .addCase(checkAuth.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(checkAuth.fulfilled, (state, action: PayloadAction<User>) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(checkAuth.rejected, (state) => {
+        state.loading = false;
+        state.user = null;
+      })
+
+      // sendAuthEmail
       .addCase(sendAuthEmail.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -99,7 +157,7 @@ const authSlice = createSlice({
         state.error = action.payload ?? "Erreur inconnue";
       })
 
-      // Phase 2 : verifyPasscode
+      // verifyPasscode
       .addCase(verifyPasscode.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -113,9 +171,30 @@ const authSlice = createSlice({
       .addCase(verifyPasscode.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? "Erreur de validation";
+      })
+
+      // registerUser
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload ?? "Erreur lors de l'inscription";
+      })
+
+      // logoutUser
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.emailSent = false;
+        state.currentEmail = null;
+        state.error = null;
       });
   },
 });
 
-export const { logout, resetError } = authSlice.actions;
+export const { resetError } = authSlice.actions;
 export default authSlice.reducer;

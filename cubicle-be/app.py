@@ -6,6 +6,7 @@ from auth.otp_auth import auth_bp
 from extensions.otp_ext import db, mail, jwt
 from config.config_env import config_map
 from config.config_ca import init_ssl
+from config.config_cors import setup_cors
 from models.user import User
 from models.topic import Topic
 from models.snippet import Snippet
@@ -35,6 +36,9 @@ app.config.from_object("config.config_storage")
 
 # ===== JWT COOKIES =====
 app.config.from_object("config.config_jwt_cookies")
+
+# ===== CORS Configuration =====
+setup_cors(app)
 
 # ===== INITIALIZE EXTENSIONS =====
 init_ssl(app)

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import type { ChangeEvent, FormEvent, SVGProps } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -18,7 +18,8 @@ import {
   Grid
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useAppSelector } from '../hooks/hooks';
+import { useAppDispatch, useAppSelector } from '../hooks/hooks';
+import { registerUser } from '../state/slices/authSlice';
 
 const CubicleLogo = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="white" {...props}>
@@ -33,32 +34,58 @@ const Signup: React.FC = () => {
     first_name: '',
     last_name: '',
     phone_number: '',
-    avatar_url: ''
+    bio: ''
   });
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { loading, error } = useAppSelector((state) => state.auth);
   const theme = useTheme();
 
+  // Handle standard text input changes
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Handle image file selection and local preview generation
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      // Create image on cloud storage
+      setAvatarFile(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // Construct FormData to handle multipart/form-data upload (required for files)
+    const data = new FormData();
+    data.append('username', formData.username);
+    data.append('email', formData.email);
+    data.append('first_name', formData.first_name);
+    data.append('last_name', formData.last_name);
+    data.append('phone_number', formData.phone_number);
+    data.append('bio', formData.bio);
+    
+    if (avatarFile) {
+      data.append('avatar', avatarFile);
+    }
+
+    // Dispatch registration action
+    const resultAction = await dispatch(registerUser(data));
+    
+    // Redirect to login on success
+    if (registerUser.fulfilled.match(resultAction)) {
+      void navigate('/login');
+    }
   };
 
+  // Modern UI input styles
   const modernInputStyle = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '50px',
@@ -86,7 +113,6 @@ const Signup: React.FC = () => {
           backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)', textAlign: 'center'
         }}>
           
-          {/* Section Photo de Profil avec Bouton */}
           <Stack alignItems="center" spacing={2} sx={{ mb: 4 }}>
             <Avatar 
               src={previewUrl || ''} 
@@ -112,7 +138,7 @@ const Signup: React.FC = () => {
 
           {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 4 }}>{error}</Alert>}
 
-          <Box component="form" onSubmit={handleSubmit} noValidate>
+          <Box component="form" onSubmit={(e: FormEvent<HTMLFormElement>) => {void handleSubmit(e);}} noValidate>
             <Stack spacing={2}>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -129,6 +155,7 @@ const Signup: React.FC = () => {
                 </Grid>
               </Grid>
 
+              {/* Identity Fields Row */}
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Box sx={{ textAlign: 'left' }}>
@@ -143,7 +170,6 @@ const Signup: React.FC = () => {
                   </Box>
                 </Grid>
               </Grid>
-
 
               <Box sx={{ textAlign: 'left' }}>
                 <InputLabel sx={labelStyle}>Téléphone</InputLabel>

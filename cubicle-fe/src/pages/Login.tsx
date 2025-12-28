@@ -19,7 +19,8 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks.ts';
-import { sendAuthEmail, verifyPasscode, logout } from '../state/slices/authSlice.ts';
+// Import async thunks from the auth slice
+import { sendAuthEmail, verifyPasscode, logoutUser, resetError } from '../state/slices/authSlice.ts';
 
 const CubicleLogo = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -34,8 +35,10 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   
+  // Access auth state from Redux store
   const { loading, error, emailSent, currentEmail, user } = useAppSelector((state) => state.auth);
 
+  // Redirect to dashboard if user session is detected
   useEffect(() => {
     if (user) {
       void navigate('/');
@@ -45,19 +48,24 @@ const Login: React.FC = () => {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!emailSent) {
+      // Step 1: Request an OTP for the given email
       void dispatch(sendAuthEmail(email));
     } else {
       if (currentEmail) {
+        // Step 2: Verify the OTP code sent to the user
         void dispatch(verifyPasscode({ email: currentEmail, code: passcode }));
       }
     }
   };
 
   const handleBack = () => {
-    dispatch(logout());
+    // Call server-side logout to clear cookies and reset local state
+    void dispatch(logoutUser());
     setPasscode('');
+    dispatch(resetError());
   };
 
+  // Custom styles for a modern glassmorphism feel
   const modernInputStyle = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '50px',
@@ -103,6 +111,7 @@ const Login: React.FC = () => {
             position: 'relative'
           }}
         >
+          {/* Back button visible only during OTP verification phase */}
           {emailSent && (
             <IconButton 
               onClick={handleBack}
@@ -126,6 +135,7 @@ const Login: React.FC = () => {
               : `Code envoyé à ${currentEmail}`}
           </Typography>
 
+          {/* Display API error messages */}
           {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 4 }}>{error}</Alert>}
 
           <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -156,6 +166,7 @@ const Login: React.FC = () => {
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
                     sx={modernInputStyle}
+                    inputProps={{ maxLength: 6 }} // Limit input to 6 digits for OTP
                   />
                 )}
               </Box>
@@ -188,6 +199,7 @@ const Login: React.FC = () => {
               </Button>
             </Stack>
 
+            {/* Signup redirection link */}
             {!emailSent && (
               <Box sx={{ mt: 4 }}>
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
