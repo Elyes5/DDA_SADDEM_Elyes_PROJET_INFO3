@@ -2,6 +2,7 @@ import React, { useState, type SVGProps } from 'react';
 import { AppBar, Toolbar, Typography, Avatar, Box, Menu, MenuItem, IconButton, ListItemIcon, Divider } from '@mui/material';
 import Logout from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/hooks';
 import { logoutUser } from '../state/slices/authSlice';
 import type { User } from '../models/User';
@@ -18,6 +19,7 @@ const CubicleLogo = (props: SVGProps<SVGSVGElement>) => (
 
 export const Navbar: React.FC<NavbarProps> = ({ user }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -27,6 +29,15 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
 
   const handleCloseMenu = () => {
     setAnchorEl(null);
+  };
+
+  const handleNavigateProfile = () => {
+    void navigate('/profile');
+    handleCloseMenu();
+  };
+
+  const handleNavigateHome = () => {
+    void navigate('/home');
   };
 
   const handleLogout = () => {
@@ -48,7 +59,10 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box 
+          onClick={handleNavigateHome} 
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+        >
           <Box sx={{ 
             bgcolor: 'primary.main', 
             p: 0.5, 
@@ -77,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
             aria-expanded={open ? 'true' : undefined}
           >
             <Avatar 
-              src={user.avatar_url ?? ''} 
+              src={user.avatar_url ?? undefined} 
               alt={user.username} 
               sx={{ width: 35, height: 35, border: '1px solid #E0E0E0' }} 
             />
@@ -102,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
             },
           }}
         >
-          <MenuItem onClick={handleCloseMenu}>
+          <MenuItem onClick={handleNavigateProfile}>
             <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
             Profile
           </MenuItem>

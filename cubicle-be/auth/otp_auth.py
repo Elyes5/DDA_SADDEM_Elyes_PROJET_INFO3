@@ -2,7 +2,7 @@ from datetime import timezone
 import os
 from flask import request, jsonify, Blueprint
 from flask_mail import Message
-from flask_jwt_extended import create_access_token, set_access_cookies
+from flask_jwt_extended import create_access_token, set_access_cookies, create_refresh_token, set_refresh_cookies
 import secrets
 from sqlalchemy.exc import IntegrityError
 from flask import current_app
@@ -216,7 +216,10 @@ def verify_code():
     # 7. Create the JWT (using user_id as identity)
     access_token = create_access_token(identity=str(user.user_id))
 
-    # 8. Prepare the response (the token won't be returned, it will be stored in cookies)
+    # 8. Create the refresh token (using user_id as identity)
+    refresh_token = create_refresh_token(identity=str(user.user_id))
+
+    # 9. Prepare the response (the token won't be returned, it will be stored in cookies)
     response = jsonify({
         "message": "User verified successfully",
         "user": {
@@ -238,13 +241,13 @@ def verify_code():
         }
     })
 
-    # 9. Clean up the database and remove the old OTP
+    # 10. Clean up the database and remove the old OTP
     db.session.delete(otp_entry)
     db.session.commit()
 
-    # 10. Injection du cookie JWT dans les headers de la réponse
+    # 11. Inject cookies in the header of the response
     set_access_cookies(response, access_token)
-
+    set_refresh_cookies(response, refresh_token)
     return response, 200
 
 
@@ -278,3 +281,13 @@ def get_current_user():
             "followers_count": user.followers.count()
         }
     }), 200
+
+# This route is intended to generate a refresh token to keep the user authenticated
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    response = jsonify({"message": "Token refreshed"})
+    set_access_cookies(response, access_token)
+    return response, 200
