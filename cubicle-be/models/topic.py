@@ -8,3 +8,11 @@ class Topic(db.Model):
     popularity_score = db.Column(db.Integer, default=0)
 
     snippets = db.relationship('Snippet', secondary='snippet_topic', back_populates='topics')
+
+    def to_dict(self):
+        return {
+            "topic_id": self.topic_id,
+            "name": self.name,
+            "description": self.description,
+            "popularity_score": self.popularity_score
+        }

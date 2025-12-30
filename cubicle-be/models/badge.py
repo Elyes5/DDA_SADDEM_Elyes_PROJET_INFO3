@@ -8,3 +8,12 @@ class Badge(db.Model):
     date_obtained = db.Column(db.Date)
     icon_url = db.Column(db.String(255))
     users = db.relationship('User', back_populates='badge')
+
+    def to_dict(self):
+        return {
+            "badge_id": self.badge_id,
+            "badge_name": self.badge_name,
+            "description": self.description,
+            "date_obtained": self.date_obtained.isoformat() if self.date_obtained else None,
+            "icon_url": self.icon_url
+        }

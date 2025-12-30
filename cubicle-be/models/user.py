@@ -48,5 +48,11 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "bio": self.bio,
-            "avatar_url": self.avatar_url
+            "avatar_url": self.avatar_url,
+            "phone_number": self.phone_number,
+            "is_active": self.is_active,
+            "is_verified": self.is_verified,
+            "join_date": self.join_date.isoformat() if self.last_login else None,
+            "last_login": self.last_login.isoformat() if self.last_login else None,
+            "badge": self.badge.to_dict() if self.badge else None
         }

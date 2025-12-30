@@ -10,3 +10,12 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     snippet = db.relationship('Snippet', back_populates='reviews')
     reviewer = db.relationship('User', back_populates='reviews')
+
+    def to_dict(self):
+        return {
+            "review_id": self.review_id,
+            "snippet_id": self.snippet_id,
+            "reviewer_id": self.reviewer_id,
+            "rating": self.rating,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }

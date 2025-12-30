@@ -26,3 +26,19 @@ class Snippet(db.Model):
     
     topics = db.relationship('Topic', secondary=snippet_topic, back_populates='snippets')
     liked_by = db.relationship('User', secondary='user_likes_snippet', back_populates='liked_snippets')
+
+    def to_dict(self):
+        return {
+            "snippet_id": self.snippet_id,
+            "author_id": self.author_id,
+            "title": self.title,
+            "code_content": self.code_content,
+            "language": self.language,
+            "description": self.description,
+            "is_public": self.is_public,
+            "view_count": self.view_count,
+            "like_count": self.like_count,
+            "creation_date": self.creation_date.isoformat(),
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "topics": [topic.to_dict() for topic in self.topics]
+        }
