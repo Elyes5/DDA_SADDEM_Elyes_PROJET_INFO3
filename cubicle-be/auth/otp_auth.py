@@ -234,7 +234,6 @@ def verify_code():
             "is_verified": user.is_verified,
             "join_date": user.join_date.isoformat() if user.join_date else None,
             "last_login": user.last_login.isoformat() if user.last_login else None,
-            "badge": user.badge.name if user.badge else None,
             "snippets_ids": [s.snippet_id for s in user.snippets],
             "liked_snippets_ids": [s.snippet_id for s in user.liked_snippets],
             "followers": user.followers.count()
@@ -275,7 +274,6 @@ def get_current_user():
             "is_verified": user.is_verified,
             "join_date": user.join_date.isoformat() if user.join_date else None,
             "last_login": user.last_login.isoformat() if user.last_login else None,
-            "badge": user.badge.name if user.badge else None,
             "snippets_ids": [s.snippet_id for s in user.snippets],
             "liked_snippets_ids": [s.snippet_id for s in user.liked_snippets],
             "followers_count": user.followers.count()
@@ -291,3 +289,83 @@ def refresh():
     response = jsonify({"message": "Token refreshed"})
     set_access_cookies(response, access_token)
     return response, 200
+
+
+# Edit the profile of the user
+@auth_bp.route('/edit', methods=['PUT'])
+@jwt_required()
+def edit_profile():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # 1. Update the text fields (In this case, form-data is used since we have files)
+    data = request.form
+    user.first_name = data.get('first_name', user.first_name)
+    user.last_name = data.get('last_name', user.last_name)
+    user.bio = data.get('bio', user.bio)
+
+    # 2. Manage the avatar
+    file = request.files.get('avatar')
+    if file and allowed_file(file.filename):
+        # Delete the old avatar
+        if user.avatar_url:
+            try:
+                if current_app.config.get("ENV") == "development":
+                    # we get the file name from the relative URL for local images
+                    old_filename = user.avatar_url.split('/')[-1]
+                    old_path = os.path.join(current_app.config["LOCAL_UPLOAD_FOLDER"], old_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                else:
+                    # For azure we extract the name of the blob from the URL
+                    old_blob_name = user.avatar_url.split('/')[-1]
+                    blob_service_client = BlobServiceClient.from_connection_string(
+                        current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
+                    )
+                    container_client = blob_service_client.get_container_client(
+                        current_app.config["AZURE_STORAGE_CONTAINER"]
+                    )
+                    blob_client = container_client.get_blob_client(old_blob_name)
+                    blob_client.delete_blob()
+            except Exception as e:
+                print(f"Warning: Could not delete old avatar: {e}")
+
+        # We upload the new avatar using a new randomized name
+        new_filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
+
+        if current_app.config.get("ENV") == "development":
+            upload_folder = current_app.config["LOCAL_UPLOAD_FOLDER"]
+            os.makedirs(upload_folder, exist_ok=True)
+            file.save(os.path.join(upload_folder, new_filename))
+            user.avatar_url = f"/uploads/avatars/{new_filename}"
+        else:
+            blob_service_client = BlobServiceClient.from_connection_string(
+                current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
+            )
+            container_client = blob_service_client.get_container_client(
+                current_app.config["AZURE_STORAGE_CONTAINER"]
+            )
+            blob_client = container_client.get_blob_client(new_filename)
+            blob_client.upload_blob(file, overwrite=True)
+
+            account_name = current_app.config["AZURE_STORAGE_ACCOUNT_NAME"]
+            container_name = current_app.config["AZURE_STORAGE_CONTAINER"]
+            user.avatar_url = f"https://{account_name}.blob.core.windows.net/{container_name}/{new_filename}"
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "Profile updated successfully",
+            "user": {
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "bio": user.bio,
+                "avatar_url": user.avatar_url
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error updating profile", "error": str(e)}), 500

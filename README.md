@@ -58,7 +58,6 @@ Le schéma de base de données est structuré pour répondre aux exigences de la
 
 | Entités                                        | Type de Relation | Explication                                                                                            | Contrainte SAE   |
 | :--------------------------------------------- | :--------------- | :----------------------------------------------------------------------------------------------------- | :--------------- |
-| **User** $\leftrightarrow$ **Badge**           | **One-to-One**   | Chaque utilisateur a un statut/profil unique (métadonnées utilisateur).                                | **One-to-One**   |
 | **Snippet** $\leftrightarrow$ **Review**       | **One-to-Many**  | Un snippet reçoit plusieurs revues/commentaires.                                                       | **One-to-Many**  |
 | **User** $\leftrightarrow$ **User** (Follower) | **Many-to-Many** | Un utilisateur suit plusieurs personnes, et est suivi par plusieurs (relation récursive).              | **Many-to-Many** |
 | **Snippet** $\leftrightarrow$ **Topic**        | **Many-to-Many** | Un snippet peut être associé à plusieurs sujets d'expertise.                                           | **Many-to-Many** |
@@ -79,7 +78,6 @@ L'API utilise les verbes HTTP standards (GET, POST, PUT/PATCH, DELETE). Ces APIs
 | Méthode HTTP | Route (URL)                      | Description                                                   | Démonstration    |
 | :----------- | :------------------------------- | :------------------------------------------------------------ | :--------------- |
 | `POST`       | `/api/users`                     | Crée un nouvel utilisateur.                                   | CRUD de base     |
-| `GET`        | `/api/users/{user_id}/badge`     | Récupère le badge de l'utilisateur.                           | **One-to-One**   |
 | `GET`        | `/api/users/{user_id}/followers` | Liste les utilisateurs qui suivent cet utilisateur.           | **Many-to-Many** |
 | `POST`       | `/api/users/{user_id}/follow`    | Permet à l'utilisateur actuel de suivre un autre utilisateur. | **Many-to-Many** |
 

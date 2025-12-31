@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 from flask_migrate import Migrate
 from auth.otp_auth import auth_bp
-from controllers import followers, user
+from controllers import followers, user_controller
 from extensions.otp_ext import db, mail, jwt
 from config.config_env import config_map
 from config.config_ca import init_ssl
@@ -12,9 +12,8 @@ from models.user import User
 from models.topic import Topic
 from models.snippet import Snippet
 from models.review import Review
-from models.badge import Badge
 from models.user import user_likes_snippet
-from models.snippet import snippet_topic
+from routes.routes import register_routes
 
 load_dotenv()  # Load environment variables from .env
 
@@ -51,9 +50,8 @@ jwt.init_app(app)
 migrate = Migrate(app, db)
 
 # ===== BLUEPRINTS =====
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(followers.followers_bp, url_prefix='/api/followers')
-app.register_blueprint(user.users_bp, url_prefix='/api/user')
+register_routes(app)
 
 # ===== ROUTES =====
 @app.route("/")

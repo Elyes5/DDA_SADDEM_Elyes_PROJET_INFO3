@@ -16,5 +16,8 @@ MAIL_PASSWORD = os.getenv("SMTP_PASSWORD")
 # Default email sender
 MAIL_DEFAULT_SENDER = os.getenv("SMTP_DEFAULT_SENDER")
 
+# Mail debug
+MAIL_DEBUG = ENV != "production"
+
 MAIL_MAX_EMAILS = None
 MAIL_SUPPRESS_SEND = False
