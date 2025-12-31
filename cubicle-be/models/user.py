@@ -27,8 +27,6 @@ class User(db.Model):
     is_verified = db.Column(db.Boolean, default=False)
     join_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_login = db.Column(db.DateTime)
-    badge_id = db.Column(db.Integer, db.ForeignKey('badge.badge_id'))
-    badge = db.relationship('Badge', back_populates='users')
     snippets = db.relationship('Snippet', back_populates='author', cascade="all, delete-orphan")
     reviews = db.relationship('Review', back_populates='reviewer', cascade="all, delete-orphan")
     liked_snippets = db.relationship('Snippet', secondary=user_likes_snippet, back_populates='liked_by')
@@ -54,5 +52,27 @@ class User(db.Model):
             "is_verified": self.is_verified,
             "join_date": self.join_date.isoformat() if self.last_login else None,
             "last_login": self.last_login.isoformat() if self.last_login else None,
-            "badge": self.badge.to_dict() if self.badge else None
         }
+
+    def to_full_dict(self, requester_id=None):
+        current_id = int(requester_id) if requester_id is not None else None
+        is_owner = (current_id == self.user_id)
+
+        data = self.to_dict()
+        data.update({
+            "snippets": [
+                s.to_dict() for s in self.snippets
+                if is_owner or s.is_public
+            ],
+            "liked_snippets": [
+                s.to_dict() for s in self.liked_snippets
+                if s.is_public or (current_id and int(s.user_id) == current_id)
+            ],
+            "followers_count": self.followers.count(),
+            "following_count": self.following.count()
+        })
+        return data
+
+    @staticmethod
+    def get_by_id(user_id):
+        return User.query.get(user_id)

@@ -1,7 +1,7 @@
-import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './slices/authSlice';
-import snippetReducer from './slices/snippetSlice';
-import topicReducer from './slices/topicSlice';
+import { configureStore } from '@reduxjs/toolkit'
+import authReducer from './slices/authSlice'
+import snippetReducer from './slices/snippetSlice'
+import topicReducer from './slices/topicSlice'
 
 export const store = configureStore({
   reducer: {
@@ -9,7 +9,7 @@ export const store = configureStore({
     snippets: snippetReducer,
     topics: topicReducer,
   },
-});
+})
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch

@@ -16,7 +16,6 @@ erDiagram
     User }o--o{ UserLikesSnippet : likes
     Snippet }o--o{ UserLikesSnippet : liked_by
     User }o--o{ UserFollower : followed_by
-    Badge ||--o{ User : awarded_to
 
 
     %% ===============================
@@ -38,14 +37,6 @@ erDiagram
         datetime join_date
         datetime last_login
         int badge_id FK
-    }
-
-    Badge {
-        int badge_id PK
-        string badge_name
-        string description
-        date date_obtained
-        string icon_url
     }
 
     Snippet {
