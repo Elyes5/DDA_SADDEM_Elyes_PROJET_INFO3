@@ -1,8 +1,10 @@
 import type { User } from './User'
 
 export interface Review {
-  review_id: number
+  id: number
   reviewer: User
   rating: number
+  comment: string
+  snippet_id: number
   created_at: string
 }

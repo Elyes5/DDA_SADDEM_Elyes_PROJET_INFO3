@@ -12,17 +12,43 @@ interface CustomRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
 }
 
+const getCookie = (name: string): string | undefined => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return undefined;
+};
+
 const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   withCredentials: true,
 })
 
 const refreshApi = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   withCredentials: true,
 })
+
+api.interceptors.request.use((config) => {
+  const csrfToken = getCookie(import.meta.env.VITE_CSRF_COOKIE_NAME);
+  const method = config.method?.toLowerCase();
+  
+  if (csrfToken && config.headers && method !== 'get') {
+    config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] = csrfToken;
+  }
+  
+  return config;
+});
+
+refreshApi.interceptors.request.use((config) => {
+  const csrfToken = getCookie(import.meta.env.VITE_CSRF_COOKIE_NAME);
+  const method = config.method?.toLowerCase();
+
+  if (csrfToken && config.headers && method !== 'get') {
+    config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] = csrfToken;
+  }
+  return config;
+});
 
 let isRefreshing = false
 let failedQueue: FailedRequest[] = []
@@ -43,23 +69,18 @@ api.interceptors.response.use(
   async (error: unknown) => {
     if (!axios.isAxiosError(error)) {
       return Promise.reject(
-        error instanceof Error
-          ? error
-          : new Error(String(error)),
+        error instanceof Error ? error : new Error(String(error))
       )
     }
 
-    const originalRequest =
-      error.config as CustomRequestConfig
+    const originalRequest = error.config as CustomRequestConfig
 
-    // If it's a 401 and it's not already a retry attempt
     if (
       error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry
     ) {
       if (isRefreshing) {
-        // Waiting for actual refresh
         return new Promise<unknown>((resolve, reject) => {
           failedQueue.push({
             resolve,
@@ -74,21 +95,13 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        // Using of refreshApi (No interceptors here)
         await refreshApi.post('/api/auth/refresh')
-
         processQueue(null)
         return api(originalRequest)
       } catch (refreshError: unknown) {
         const standardizedError =
-          refreshError instanceof Error
-            ? refreshError
-            : new Error('Session expirée')
-
+          refreshError instanceof Error ? refreshError : new Error('Session expirée')
         processQueue(standardizedError)
-
-        // --- TODO : Force logout if refresh fails ---
-
         return Promise.reject(standardizedError)
       } finally {
         isRefreshing = false

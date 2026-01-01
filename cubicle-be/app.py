@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from dotenv import load_dotenv
 import os
 from flask_migrate import Migrate
@@ -54,9 +54,15 @@ app.register_blueprint(followers.followers_bp, url_prefix='/api/followers')
 register_routes(app)
 
 # ===== ROUTES =====
-@app.route("/")
+@app.route('/')
 def server_working():
     return "<p>Serving on port 5000</p>"
+
+if os.getenv('FLASK_ENV') == 'development':
+    UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
+    @app.route('/uploads/<path:filename>')
+    def uploaded_file(filename):
+        return send_from_directory(UPLOAD_FOLDER, filename)
 
 # ===== RUN =====
 if __name__ == "__main__":

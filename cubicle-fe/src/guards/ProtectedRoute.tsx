@@ -1,7 +1,17 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { useAppSelector } from '../hooks/hooks'
+import { useAppSelector, useAppDispatch } from '../hooks/hooks'
+import { fetchPublicSnippets } from '../state/slices/snippetSlice'
+import { fetchTopics } from '../state/slices/topicSlice'
+import { useEffect } from 'react'
 
 export const ProtectedRoute = () => {
+  const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    void dispatch(fetchPublicSnippets())
+    void dispatch(fetchTopics())
+  }, [dispatch])
+
   const { user, loading } = useAppSelector(
     (state) => state.auth,
   )

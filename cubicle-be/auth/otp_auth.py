@@ -44,15 +44,15 @@ def email_login():
     email = data.get('email')
 
     if not email:
-        return jsonify({"message": "Email is required."}), 400
+        return jsonify({"error": "Email is required."}), 400
 
     email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     if not re.match(email_regex, email):
-        return jsonify({"message": "Invalid email format."}), 400
+        return jsonify({"error": "Invalid email format."}), 400
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({"message": "Email is not registered, please sign up."}), 400
+        return jsonify({"error": "Email is not registered, please sign up."}), 400
 
     # Generate OTP code
     otp_code = f"{secrets.randbelow(1_000_000):06d}"
@@ -71,7 +71,7 @@ def email_login():
             subject="Cubicle One-Time Password"
         )
     except Exception as e:
-        return jsonify({"message": "Error sending email", "error": str(e)}), 500
+        return jsonify({"error": f"Error sending email : {str(e)}"}), 500
 
     if os.getenv("FLASK_ENV", "development") != "production":
         print(f"[DEV OTP] {email}: {otp_code}")
@@ -102,12 +102,12 @@ def register_user():
 
     # Validate required fields
     if not username or not email or not first_name or not last_name:
-        return jsonify({"message": "Username, email, first name, and last name are required."}), 400
+        return jsonify({"error": "Username, email, first name, and last name are required."}), 400
 
     # Validate email format
     email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     if not re.match(email_regex, email):
-        return jsonify({"message": "Invalid email format."}), 400
+        return jsonify({"error": "Invalid email format."}), 400
 
     # Handle avatar file
     avatar_url = None
@@ -116,7 +116,7 @@ def register_user():
     if file:
         # Check if extension is valid
         if not allowed_file(file.filename):
-            return jsonify({"message": "Invalid file extension. Please upload an image (png, jpg, jpeg, gif)."}), 400
+            return jsonify({"error": "Invalid file extension. Please upload an image (png, jpg, jpeg, gif)."}), 400
 
         # Generate a unique filename
         filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
@@ -127,7 +127,7 @@ def register_user():
             os.makedirs(upload_folder, exist_ok=True)
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
-            avatar_url = f"/uploads/avatars/{filename}"
+            avatar_url = f"{os.getenv('DEV_API_URL')}uploads/avatars/{filename}"
         else:
             # Production: Azure Blob Storage
             blob_service_client = BlobServiceClient.from_connection_string(
@@ -161,7 +161,7 @@ def register_user():
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return jsonify({"message": "Username or email already exists."}), 400
+        return jsonify({"error": "Username or email already exists."}), 400
 
     return jsonify({
         "message": "User registered successfully. Please verify your email."
@@ -175,12 +175,12 @@ def verify_code():
     code = data.get('code')
 
     if not email or not code:
-        return jsonify({"message": "Missing email or code"}), 400
+        return jsonify({"error": "Missing email or code"}), 400
 
     # 1. Recover OTP
     otp_entry = OTP.query.filter_by(email=email).first()
     if not otp_entry:
-        return jsonify({"message": "Incorrect email or code"}), 400
+        return jsonify({"error": "Incorrect email or code"}), 400
 
     # 2. Manage attempts (max 3)
     if otp_entry.attempts is None:
@@ -189,25 +189,25 @@ def verify_code():
     if otp_entry.attempts >= 3:
         db.session.delete(otp_entry)
         db.session.commit()
-        return jsonify({"message": "Too many failed attempts. OTP is now invalid."}), 403
+        return jsonify({"error": "Too many failed attempts. OTP is now invalid."}), 403
 
     # 3. Verify if the code is correct or not
     if otp_entry.code != code:
         otp_entry.attempts += 1
         db.session.commit()
         remaining = max(0, 3 - otp_entry.attempts)
-        return jsonify({"message": f"Incorrect code. {remaining} attempts left."}), 401
+        return jsonify({"error": f"Incorrect code. {remaining} attempts left."}), 401
 
     # 4. Verify is the OTP is valid (The otp should only be valid for 10 minutes)
     if not otp_entry.is_valid():
         db.session.delete(otp_entry)
         db.session.commit()
-        return jsonify({"message": "The code has expired"}), 401
+        return jsonify({"error": "The code has expired"}), 401
 
     # 5. Get and verify the user.
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({"message": "User not found"}), 400
+        return jsonify({"error": "User not found"}), 400
 
     # 6. Update user status to verified
     if not user.is_verified:
@@ -258,27 +258,10 @@ def get_current_user():
     user = User.query.get(int(user_id))
 
     if not user:
-        return jsonify({"message": "User not found"}), 404
-
+        return jsonify({"error": "User not found"}), 404
+    authenticated_user_info = user.to_full_dict(requester_id=user_id)
     # Return user
-    return jsonify({
-        "user": {
-            "id": user.user_id,
-            "username": user.username,
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "bio": user.bio,
-            "avatar_url": user.avatar_url,
-            "phone_number": user.phone_number,
-            "is_verified": user.is_verified,
-            "join_date": user.join_date.isoformat() if user.join_date else None,
-            "last_login": user.last_login.isoformat() if user.last_login else None,
-            "snippets_ids": [s.snippet_id for s in user.snippets],
-            "liked_snippets_ids": [s.snippet_id for s in user.liked_snippets],
-            "followers_count": user.followers.count()
-        }
-    }), 200
+    return jsonify(authenticated_user_info), 200
 
 # This route is intended to generate a refresh token to keep the user authenticated
 @auth_bp.route('/refresh', methods=['POST'])
@@ -340,7 +323,7 @@ def edit_profile():
             upload_folder = current_app.config["LOCAL_UPLOAD_FOLDER"]
             os.makedirs(upload_folder, exist_ok=True)
             file.save(os.path.join(upload_folder, new_filename))
-            user.avatar_url = f"/uploads/avatars/{new_filename}"
+            user.avatar_url = f"{os.getenv('DEV_API_URL')}uploads/avatars/{new_filename}"
         else:
             blob_service_client = BlobServiceClient.from_connection_string(
                 current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
@@ -359,13 +342,8 @@ def edit_profile():
         db.session.commit()
         return jsonify({
             "message": "Profile updated successfully",
-            "user": {
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "bio": user.bio,
-                "avatar_url": user.avatar_url
-            }
+            "user": user.to_full_dict(requester_id=user_id)
         }), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Error updating profile", "error": str(e)}), 500
+        return jsonify({"error": f"Error updating profile : ${str(e)}"}), 500
