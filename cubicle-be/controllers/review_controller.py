@@ -12,10 +12,15 @@ def post_review(snippet_id):
     data = request.get_json()
 
     rating = data.get('rating')
+    comment = data.get('comment')
+
     if rating is None:
         return jsonify({"error": "Rating is required"}), 400
 
-    result, error = ReviewService.add_or_update_review(snippet_id, user_id, rating)
+    if comment is None:
+        return jsonify({"error": "Comment is required"}), 400
+
+    result, error = ReviewService.add_or_update_review(snippet_id, user_id, rating, comment)
     if error:
         status = 403 if "Unauthorized" in error or "own" in error else 400
         if "not found" in error: status = 404

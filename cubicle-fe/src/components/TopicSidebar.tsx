@@ -71,7 +71,7 @@ export const TopicSidebar: React.FC<SidebarProps> = ({
       </ListItem>
       <Divider sx={{ my: 2 }} />
       {topics.map((topic) => (
-        <ListItem key={topic.topic_id} disablePadding>
+        <ListItem key={topic.id} disablePadding>
           <ListItemButton
             selected={selectedTopic === topic.name}
             onClick={() => onSelectTopic(topic.name)}
@@ -82,7 +82,6 @@ export const TopicSidebar: React.FC<SidebarProps> = ({
                 width: 10,
                 height: 10,
                 borderRadius: '50%',
-                bgcolor: topic.color,
                 mr: 2,
               }}
             />

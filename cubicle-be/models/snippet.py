@@ -13,7 +13,6 @@ class Snippet(db.Model):
     language = db.Column(db.String(50))
     description = db.Column(db.Text)
     is_public = db.Column(db.Boolean, default=True)
-    view_count = db.Column(db.Integer, default=0)
     like_count = db.Column(db.Integer, default=0)
     creation_date = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date())
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),onupdate=lambda: datetime.now(timezone.utc))
@@ -25,17 +24,16 @@ class Snippet(db.Model):
 
     def to_dict(self):
         return {
-            "snippet_id": self.snippet_id,
-            "author_id": self.author_id,
-            "topic_id": self.topic_id,
-            "topic_name": self.topic.name if self.topic else None,
+            "id": self.snippet_id,
             "title": self.title,
-            "code_content": self.code_content,
-            "language": self.language,
             "description": self.description,
+            "code_content": self.code_content,
             "is_public": self.is_public,
-            "view_count": self.view_count,
-            "like_count": self.like_count,
+            "language": self.language,
+            "like_count": len(self.liked_by) if self.liked_by else 0,
             "creation_date": self.creation_date.isoformat() if self.creation_date else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "author": self.author.to_dict() if self.author else None,
+            "topic": self.topic.to_dict() if self.topic else None,
+            "reviews": [review.to_dict() for review in self.reviews] if self.reviews else [],
+            "likes": [user.to_dict() for user in self.liked_by] if self.liked_by else []
         }

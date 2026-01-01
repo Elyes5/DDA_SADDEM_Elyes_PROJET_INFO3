@@ -1,3 +1,5 @@
+from sqlalchemy import or_
+
 from models.snippet import Snippet
 from models.user import User
 from models.topic import Topic
@@ -161,9 +163,15 @@ class SnippetService:
             return None, str(e)
 
     @staticmethod
-    def get_all_public_snippets():
+    def get_all_public_snippets(user_id):
         try:
-            snippets = Snippet.query.filter_by(is_public=True).order_by(Snippet.creation_date.desc()).all()
+            snippets = Snippet.query.filter(
+                or_(
+                    Snippet.is_public == True,
+                    Snippet.author_id == user_id
+                )
+            ).order_by(Snippet.creation_date.desc()).all()
+
             return [s.to_dict() for s in snippets], None
         except Exception as e:
             return None, str(e)

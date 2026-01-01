@@ -82,7 +82,7 @@ const Login: React.FC = () => {
     dispatch(resetError())
   }
 
-  // Custom styles for a modern glassmorphism feel
+  // Custom styles
   const modernInputStyle = {
     '& .MuiOutlinedInput-root': {
       borderRadius: '50px',

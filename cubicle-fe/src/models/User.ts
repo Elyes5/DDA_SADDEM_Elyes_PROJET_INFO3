@@ -1,5 +1,4 @@
 import type { Snippet } from './Snippet'
-import type { Badge } from './Badge'
 export interface User {
   id: number
   email: string
@@ -12,8 +11,10 @@ export interface User {
   bio?: string
   join_date: string
   last_login?: string
-  followers: User[]
   snippets: Snippet[]
-  badge: Badge
   liked_snippets: Snippet[]
+  is_following: boolean
+  followers_count: number
+  following_count: number
+  following_ids: number[]
 }

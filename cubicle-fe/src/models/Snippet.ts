@@ -1,14 +1,15 @@
 import type { Review } from './Review'
+import type { Topic } from './Topic'
 import type { User } from './User'
 
 export interface Snippet {
-  snippet_id: number
+  id: number
   author: User
   title: string
   description: string
+  topic : Topic,
   code_content?: string | null
   language?: string | null
-  view_count: number
   like_count: number
   creation_date: string
   updated_at: string

@@ -13,6 +13,7 @@ user_likes_snippet = db.Table('user_likes_snippet',
     db.Column('like_date', db.DateTime, default=lambda: datetime.now(timezone.utc))
 )
 
+
 class User(db.Model):
     __tablename__ = 'user'
     user_id = db.Column(db.Integer, primary_key=True)
@@ -25,33 +26,46 @@ class User(db.Model):
     phone_number = db.Column(db.String(20), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     is_verified = db.Column(db.Boolean, default=False)
-    join_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    join_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     last_login = db.Column(db.DateTime)
+
     snippets = db.relationship('Snippet', back_populates='author', cascade="all, delete-orphan")
     reviews = db.relationship('Review', back_populates='reviewer', cascade="all, delete-orphan")
     liked_snippets = db.relationship('Snippet', secondary=user_likes_snippet, back_populates='liked_by')
-    
+
     followers = db.relationship(
         'User', secondary=user_follower,
         primaryjoin=(user_follower.c.followed_id == user_id),
         secondaryjoin=(user_follower.c.follower_id == user_id),
-        backref=db.backref('following', lazy='dynamic'), lazy='dynamic'
+        backref=db.backref('following', lazy='dynamic'),
+        lazy='dynamic'
     )
+
+    def follow(self, user):
+        if not self.is_following(user):
+            self.following.append(user)
+
+    def unfollow(self, user):
+        if self.is_following(user):
+            self.following.remove(user)
+
+    def is_following(self, user):
+        return self.following.filter(user_follower.c.followed_id == user.user_id).count() > 0
 
     def to_dict(self):
         return {
-            "user_id": self.user_id,
+            "id": self.user_id,
             "username": self.username,
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "bio": self.bio,
             "avatar_url": self.avatar_url,
-            "phone_number": self.phone_number,
             "is_active": self.is_active,
             "is_verified": self.is_verified,
-            "join_date": self.join_date.isoformat() if self.last_login else None,
+            "join_date": self.join_date.isoformat() if self.join_date else None,
             "last_login": self.last_login.isoformat() if self.last_login else None,
+            "following_ids": [u.user_id for u in self.following.all()]
         }
 
     def to_full_dict(self, requester_id=None):
@@ -66,10 +80,12 @@ class User(db.Model):
             ],
             "liked_snippets": [
                 s.to_dict() for s in self.liked_snippets
-                if s.is_public or (current_id and int(s.user_id) == current_id)
+                if s.is_public or (current_id and int(s.author_id) == current_id)
             ],
             "followers_count": self.followers.count(),
-            "following_count": self.following.count()
+            "following_count": self.following.count(),
+            "is_following": self.followers.filter(
+                user_follower.c.follower_id == current_id).count() > 0 if current_id else False
         })
         return data
 

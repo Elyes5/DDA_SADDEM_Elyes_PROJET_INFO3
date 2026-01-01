@@ -36,7 +36,7 @@ class Topic(db.Model):
 
     def to_dict(self):
         return {
-            "topic_id": self.topic_id,
+            "id": self.topic_id,
             "name": self.name,
             "description": self.description,
             "popularity_score": self.popularity_score

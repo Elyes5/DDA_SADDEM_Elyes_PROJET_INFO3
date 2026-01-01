@@ -10,7 +10,8 @@ import {
 } from '../../services/AuthService'
 import type { User } from '../../models/User'
 import type ApiError from '../../interfaces/ApiError'
-
+import { followUser, unfollowUser } from './userSlice'
+import { updateProfile } from './userSlice'
 interface AuthState {
   user: User | null
   loading: boolean
@@ -36,10 +37,7 @@ export const checkAuth = createAsyncThunk<
 >('auth/checkAuth', async (_, { rejectWithValue }) => {
   try {
     const response = await authService.checkAuth()
-    if (response.user) {
-      return response.user
-    }
-    return rejectWithValue('Session non trouvée')
+    return response
   } catch {
     return rejectWithValue('Aucune session active')
   }
@@ -58,7 +56,7 @@ export const sendAuthEmail = createAsyncThunk<
       axios.isAxiosError<ApiError>(err) &&
       err.response?.data
     ) {
-      return rejectWithValue(err.response.data.message)
+      return rejectWithValue(err.response.data.error)
     }
     return rejectWithValue(
       "Une erreur est survenue lors de l'envoi",
@@ -89,7 +87,7 @@ export const verifyPasscode = createAsyncThunk<
         axios.isAxiosError<ApiError>(err) &&
         err.response?.data
       ) {
-        return rejectWithValue(err.response.data.message)
+        return rejectWithValue(err.response.data.error)
       }
       return rejectWithValue('Code incorrect ou expiré')
     }
@@ -111,7 +109,7 @@ export const registerUser = createAsyncThunk<
         axios.isAxiosError<ApiError>(err) &&
         err.response?.data
       ) {
-        return rejectWithValue(err.response.data.message)
+        return rejectWithValue(err.response.data.error)
       }
       return rejectWithValue("Erreur lors de l'inscription")
     }
@@ -130,7 +128,7 @@ export const logoutUser = createAsyncThunk<
       axios.isAxiosError<ApiError>(err) &&
       err.response?.data
     ) {
-      return rejectWithValue(err.response.data.message)
+      return rejectWithValue(err.response.data.error)
     }
     return rejectWithValue('Erreur lors de la déconnexion')
   }
@@ -223,6 +221,44 @@ const authSlice = createSlice({
         state.currentEmail = null
         state.error = null
       })
+      // Follow
+      .addCase(followUser.fulfilled, (state, action) => {
+        const targetedUserId = action.meta.arg
+        if (state.user) {
+          if (!state.user.following_ids) {
+            state.user.following_ids = []
+          }
+          if (!state.user.following_ids.includes(targetedUserId)) {
+            state.user.following_ids.push(targetedUserId)
+          }
+        }
+      })
+      // Unfollow
+      .addCase(unfollowUser.fulfilled, (state, action) => {
+        const targetedUserId = action.meta.arg
+        if (state.user && state.user.following_ids) {
+          state.user.following_ids = state.user.following_ids.filter(
+            (id) => id !== targetedUserId
+          )
+        }
+      })
+      // Profile Update
+      .addCase(updateProfile.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+      })
+
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.user) {
+          state.user = { ...state.user, ...action.payload };
+        }
+      })
+      
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload ?? 'Échec de la mise à jour du profil';
+      });
   },
 })
 
