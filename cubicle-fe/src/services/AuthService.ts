@@ -50,7 +50,7 @@ export const authService = {
 
   async checkAuth(): Promise<User> {
     const { data } =
-      await api.get<User>('/api/auth/me/')
+      await api.get<User>('/api/auth/me')
     return data
   },
 

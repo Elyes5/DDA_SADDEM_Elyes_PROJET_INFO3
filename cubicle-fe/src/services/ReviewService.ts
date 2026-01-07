@@ -4,7 +4,7 @@ import type ReviewResponse from '../interfaces/ReviewResponse'
 
 export const reviewService = {
   postReview: async (snippetId: number, rating: number, comment: string): Promise<ReviewResponse> => {
-    const { data } = await api.post<ReviewResponse>(`/api/reviews/snippet/${snippetId}/`, { 
+    const { data } = await api.post<ReviewResponse>(`/api/reviews/snippet/${snippetId}`, { 
       rating, 
       comment 
     })
@@ -12,7 +12,7 @@ export const reviewService = {
   },
 
   deleteReview: async (snippetId: number): Promise<MessageResponse> => {
-    const { data } = await api.delete<MessageResponse>(`/api/reviews/snippet/${snippetId}/`)
+    const { data } = await api.delete<MessageResponse>(`/api/reviews/snippet/${snippetId}`)
     return data
   }
 }
