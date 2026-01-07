@@ -5,8 +5,8 @@ from flask_cors import CORS
 def setup_cors(app):
     # Determine environment (default to development)
     env = os.getenv("FLASK_ENV", "development")
-    prod_url = os.getenv("PROD_FRONT_END_ORIGIN", "development")
-    dev_url = os.getenv("DEV_FRONT_END_ORIGIN", "development")
+    prod_url = os.getenv("PROD_FRONT_END_ORIGIN", "https://cubicle.cubicleapp.tech")
+    dev_url = os.getenv("DEV_FRONT_END_ORIGIN", "http://localhost:5173")
     if env == "production":
         origins = [prod_url]
     else:
