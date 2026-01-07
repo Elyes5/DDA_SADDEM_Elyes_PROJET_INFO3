@@ -9,7 +9,7 @@ export interface AuthResponse {
 export const authService = {
   async login(email: string): Promise<AuthResponse> {
     const { data } = await api.post<AuthResponse>(
-      '/api/auth/login',
+      '/api/auth/login/',
       { email },
     )
     return data
@@ -20,7 +20,7 @@ export const authService = {
     code: string,
   ): Promise<AuthResponse> {
     const { data } = await api.post<AuthResponse>(
-      '/api/auth/verify-code',
+      '/api/auth/verify-code/',
       { email, code },
     )
     return data
@@ -30,7 +30,7 @@ export const authService = {
     formData: FormData,
   ): Promise<AuthResponse> {
     const { data } = await api.post<AuthResponse>(
-      '/api/auth/register',
+      '/api/auth/register/',
       formData,
       {
         headers: {
@@ -43,14 +43,14 @@ export const authService = {
 
   async logout(): Promise<AuthResponse> {
     const { data } = await api.post<AuthResponse>(
-      '/api/auth/logout',
+      '/api/auth/logout/',
     )
     return data
   },
 
   async checkAuth(): Promise<User> {
     const { data } =
-      await api.get<User>('/api/auth/me')
+      await api.get<User>('/api/auth/me/')
     return data
   },
 

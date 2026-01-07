@@ -8,7 +8,7 @@ def setup_cors(app):
     prod_url = os.getenv("PROD_FRONT_END_ORIGIN", "development")
     dev_url = os.getenv("DEV_FRONT_END_ORIGIN", "development")
     if env == "production":
-        origins = [prod_url]
+        origins = [dev_url,prod_url]
     else:
         origins = [dev_url]
 
