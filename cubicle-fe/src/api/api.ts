@@ -31,12 +31,13 @@ const refreshApi = axios.create({
 })
 
 api.interceptors.request.use((config) => {
+  console.log(import.meta.env.VITE_CSRF_COOKIE_NAME);
   const csrfToken = getCookie(import.meta.env.VITE_CSRF_COOKIE_NAME);
   const method = config.method?.toLowerCase();
   if (csrfToken && config.headers && method !== 'get') {
     config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] = csrfToken;
   }
-  console.log("ENV IS" + config.headers[import.meta.env.VITE_CSRF_HEADER_NAME])
+  console.log("ENV IS " + import.meta.env.VITE_CSRF_HEADER_NAME)
   return config;
 });
 
