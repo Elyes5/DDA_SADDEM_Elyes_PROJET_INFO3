@@ -8,7 +8,11 @@ def setup_cors(app):
     prod_url = os.getenv("PROD_FRONT_END_ORIGIN", "https://cubicle.cubicleapp.tech")
     dev_url = os.getenv("DEV_FRONT_END_ORIGIN", "http://localhost:5173")
     if env == "production":
+<<<<<<< Updated upstream
         origins = [dev_url,prod_url]
+=======
+        origins = [prod_url,dev_url]
+>>>>>>> Stashed changes
     else:
         origins = [dev_url]
 
