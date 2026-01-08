@@ -1,3 +1,11 @@
+# 1. Règle du Proxy
+[[redirects]]
+  from = "/api/*"
+  to = "https://cubicle.cubicleapp.tech/api/:splat"
+  status = 200
+  force = true
+
+# 2. Règle pour le Single Page Application (React)
 [[redirects]]
   from = "/*"
   to = "/index.html"
