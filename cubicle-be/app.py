@@ -2,8 +2,7 @@ from flask import Flask, send_from_directory
 from dotenv import load_dotenv
 import os
 from flask_migrate import Migrate
-from auth.otp_auth import auth_bp
-from controllers import followers, user_controller
+from controllers import followers
 from extensions.otp_ext import db, mail, jwt
 from config.config_env import config_map
 from config.config_ca import init_ssl
@@ -18,6 +17,9 @@ from routes.routes import register_routes
 load_dotenv()  # Load environment variables from .env
 
 app = Flask(__name__)
+
+# ===== REMOVE REDIRECTIONS =====
+app.url_map.strict_slashes = False
 
 # ===== FLASK ENV =====
 env = os.getenv("FLASK_ENV", "development")  # default to development

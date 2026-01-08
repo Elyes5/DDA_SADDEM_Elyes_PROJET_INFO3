@@ -14,6 +14,7 @@ interface CustomRequestConfig extends InternalAxiosRequestConfig {
 
 const getCookie = (name: string): string | undefined => {
   const value = `; ${document.cookie}`;
+  console.log("VALUE" + value)
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(';').shift();
   return undefined;
@@ -32,11 +33,10 @@ const refreshApi = axios.create({
 api.interceptors.request.use((config) => {
   const csrfToken = getCookie(import.meta.env.VITE_CSRF_COOKIE_NAME);
   const method = config.method?.toLowerCase();
-  
   if (csrfToken && config.headers && method !== 'get') {
     config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] = csrfToken;
   }
-  
+  console.log("ENV IS" + config.headers[import.meta.env.VITE_CSRF_HEADER_NAME])
   return config;
 });
 
@@ -47,6 +47,7 @@ refreshApi.interceptors.request.use((config) => {
   if (csrfToken && config.headers && method !== 'get') {
     config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] = csrfToken;
   }
+  console.log("ENV IS" + config.headers[import.meta.env.VITE_CSRF_HEADER_NAME])
   return config;
 });
 
@@ -100,7 +101,7 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError: unknown) {
         const standardizedError =
-          refreshError instanceof Error ? refreshError : new Error('Session expirée')
+          refreshError instanceof Error ? refreshError : new Error('Session expired')
         processQueue(standardizedError)
         return Promise.reject(standardizedError)
       } finally {
