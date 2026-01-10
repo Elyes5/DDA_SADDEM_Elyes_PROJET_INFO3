@@ -13,6 +13,7 @@ interface CustomRequestConfig extends InternalAxiosRequestConfig {
 }
 
 const getCookie = (name: string): string | undefined => {
+  console.log(document.cookie);
   const value = `; ${document.cookie}`;
   console.log("VALUE" + value)
   const parts = value.split(`; ${name}=`);
@@ -21,14 +22,18 @@ const getCookie = (name: string): string | undefined => {
 };
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
-})
+  xsrfCookieName: 'csrf_access_token',
+  xsrfHeaderName: 'X-CSRF-TOKEN',
+});
 
 const refreshApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
-})
+  xsrfCookieName: 'csrf_access_token',
+  xsrfHeaderName: 'X-CSRF-TOKEN',
+});
 
 api.interceptors.request.use((config) => {
   console.log(import.meta.env.VITE_CSRF_COOKIE_NAME);

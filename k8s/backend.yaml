@@ -58,10 +58,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - cubicle.cubicleapp.tech
+        - api.cubicleapp.tech
       secretName: cubicleapp-tls
   rules:
-    - host: cubicle.cubicleapp.tech
+    - host: api.cubicleapp.tech
       http:
         paths:
           - path: /
