@@ -16,7 +16,9 @@ interface CreateTopicModalProps {
   onClose: () => void
 }
 
-export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClose }) => {
+export const CreateTopicModal: React.FC<
+  CreateTopicModalProps
+> = ({ open, onClose }) => {
   const dispatch = useAppDispatch()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -24,7 +26,9 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
   const handleSubmit = async () => {
     if (!name.trim()) return
 
-    const result = await dispatch(createTopic({ name, description }))
+    const result = await dispatch(
+      createTopic({ name, description }),
+    )
 
     if (createTopic.fulfilled.match(result)) {
       setName('')
@@ -34,8 +38,15 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
   }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 700 }}>Nouveau Thème</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+    >
+      <DialogTitle sx={{ fontWeight: 700 }}>
+        Nouveau Thème
+      </DialogTitle>
       <DialogContent dividers>
         <Stack spacing={3} sx={{ mt: 1 }}>
           <TextField
@@ -58,10 +69,14 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
         </Stack>
       </DialogContent>
       <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} color="inherit">Annuler</Button>
-        <Button 
-          onClick={() => { void handleSubmit() }} 
-          variant="contained" 
+        <Button onClick={onClose} color="inherit">
+          Annuler
+        </Button>
+        <Button
+          onClick={() => {
+            void handleSubmit()
+          }}
+          variant="contained"
           disabled={!name.trim()}
         >
           Créer

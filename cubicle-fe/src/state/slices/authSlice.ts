@@ -228,7 +228,11 @@ const authSlice = createSlice({
           if (!state.user.following_ids) {
             state.user.following_ids = []
           }
-          if (!state.user.following_ids.includes(targetedUserId)) {
+          if (
+            !state.user.following_ids.includes(
+              targetedUserId,
+            )
+          ) {
             state.user.following_ids.push(targetedUserId)
           }
         }
@@ -237,28 +241,31 @@ const authSlice = createSlice({
       .addCase(unfollowUser.fulfilled, (state, action) => {
         const targetedUserId = action.meta.arg
         if (state.user && state.user.following_ids) {
-          state.user.following_ids = state.user.following_ids.filter(
-            (id) => id !== targetedUserId
-          )
+          state.user.following_ids =
+            state.user.following_ids.filter(
+              (id) => id !== targetedUserId,
+            )
         }
       })
       // Profile Update
       .addCase(updateProfile.pending, (state) => {
-          state.loading = true;
-          state.error = null;
+        state.loading = true
+        state.error = null
       })
 
       .addCase(updateProfile.fulfilled, (state, action) => {
-        state.loading = false;
+        state.loading = false
         if (state.user) {
-          state.user = { ...state.user, ...action.payload };
+          state.user = { ...state.user, ...action.payload }
         }
       })
-      
+
       .addCase(updateProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload ?? 'Échec de la mise à jour du profil';
-      });
+        state.loading = false
+        state.error =
+          action.payload ??
+          'Échec de la mise à jour du profil'
+      })
   },
 })
 

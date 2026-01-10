@@ -13,7 +13,7 @@ def get_cookie_str(name, default_val):
 # --- JWT Configuration ---
 JWT_TOKEN_LOCATION = ["cookies"]
 JWT_ACCESS_COOKIE_PATH = "/"
-JWT_REFRESH_COOKIE_PATH = "/api/auth/refresh"
+JWT_REFRESH_COOKIE_PATH = "/"
 
 JWT_COOKIE_DOMAIN = get_cookie_str("JWT_COOKIE_DOMAIN", None)
 

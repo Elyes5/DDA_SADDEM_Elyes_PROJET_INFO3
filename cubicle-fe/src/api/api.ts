@@ -13,49 +13,61 @@ interface CustomRequestConfig extends InternalAxiosRequestConfig {
 }
 
 const getCookie = (name: string): string | undefined => {
-  console.log(document.cookie);
-  const value = `; ${document.cookie}`;
-  console.log("VALUE" + value)
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-  return undefined;
-};
+  console.log(document.cookie)
+  const value = `; ${document.cookie}`
+  console.log('VALUE' + value)
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2)
+    return parts.pop()?.split(';').shift()
+  return undefined
+}
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   xsrfCookieName: 'csrf_access_token',
   xsrfHeaderName: 'X-CSRF-TOKEN',
-});
+})
 
 const refreshApi = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   xsrfCookieName: 'csrf_access_token',
   xsrfHeaderName: 'X-CSRF-TOKEN',
-});
+})
 
 api.interceptors.request.use((config) => {
-  console.log(import.meta.env.VITE_CSRF_COOKIE_NAME);
-  const csrfToken = getCookie(import.meta.env.VITE_CSRF_COOKIE_NAME);
-  const method = config.method?.toLowerCase();
+  console.log(import.meta.env.VITE_CSRF_COOKIE_NAME)
+  const csrfToken = getCookie(
+    import.meta.env.VITE_CSRF_COOKIE_NAME,
+  )
+  const method = config.method?.toLowerCase()
   if (csrfToken && config.headers && method !== 'get') {
-    config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] = csrfToken;
+    config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] =
+      csrfToken
   }
-  console.log("ENV IS " + import.meta.env.VITE_CSRF_HEADER_NAME)
-  return config;
-});
+  console.log(
+    'ENV IS ' + import.meta.env.VITE_CSRF_HEADER_NAME,
+  )
+  return config
+})
 
 refreshApi.interceptors.request.use((config) => {
-  const csrfToken = getCookie(import.meta.env.VITE_CSRF_COOKIE_NAME);
-  const method = config.method?.toLowerCase();
+  const csrfToken = getCookie(
+    import.meta.env.VITE_CSRF_COOKIE_NAME,
+  )
+  const method = config.method?.toLowerCase()
 
   if (csrfToken && config.headers && method !== 'get') {
-    config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] = csrfToken;
+    config.headers[import.meta.env.VITE_CSRF_HEADER_NAME] =
+      csrfToken
   }
-  console.log("ENV IS" + config.headers[import.meta.env.VITE_CSRF_HEADER_NAME])
-  return config;
-});
+  console.log(
+    'ENV IS' +
+      config.headers[import.meta.env.VITE_CSRF_HEADER_NAME],
+  )
+  return config
+})
 
 let isRefreshing = false
 let failedQueue: FailedRequest[] = []
@@ -76,11 +88,14 @@ api.interceptors.response.use(
   async (error: unknown) => {
     if (!axios.isAxiosError(error)) {
       return Promise.reject(
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error
+          ? error
+          : new Error(String(error)),
       )
     }
 
-    const originalRequest = error.config as CustomRequestConfig
+    const originalRequest =
+      error.config as CustomRequestConfig
 
     if (
       error.response?.status === 401 &&
@@ -107,7 +122,9 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError: unknown) {
         const standardizedError =
-          refreshError instanceof Error ? refreshError : new Error('Session expired')
+          refreshError instanceof Error
+            ? refreshError
+            : new Error('Session expired')
         processQueue(standardizedError)
         return Promise.reject(standardizedError)
       } finally {

@@ -7,7 +7,7 @@ export interface Snippet {
   author: User
   title: string
   description: string
-  topic : Topic,
+  topic: Topic
   code_content?: string | null
   language?: string | null
   like_count: number

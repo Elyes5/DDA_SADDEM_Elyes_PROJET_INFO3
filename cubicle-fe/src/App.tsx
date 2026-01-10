@@ -5,7 +5,10 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from './hooks/hooks'
+import {
+  useAppDispatch,
+  useAppSelector,
+} from './hooks/hooks'
 import { checkAuth } from './state/slices/authSlice'
 import {
   ProtectedRoute,
@@ -44,7 +47,8 @@ function App() {
               width: '100vw',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+              background:
+                'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
               position: 'fixed',
               top: 0,
               left: 0,
@@ -62,12 +66,24 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route path="/home" element={<MainFeed />} />
-              
-              <Route path="/profile/:id" element={<Profile />} />
 
-              <Route 
-                path="/profile" 
-                element={user ? <Navigate to={`/profile/${user.id}`} replace /> : <Navigate to="/login" />} 
+              <Route
+                path="/profile/:id"
+                element={<Profile />}
+              />
+
+              <Route
+                path="/profile"
+                element={
+                  user ? (
+                    <Navigate
+                      to={`/profile/${user.id}`}
+                      replace
+                    />
+                  ) : (
+                    <Navigate to="/login" />
+                  )
+                }
               />
 
               <Route

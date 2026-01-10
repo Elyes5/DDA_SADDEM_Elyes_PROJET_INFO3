@@ -1,4 +1,7 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import {
+  createSlice,
+  createAsyncThunk,
+} from '@reduxjs/toolkit'
 import { reviewService } from '../../services/ReviewService'
 import axios from 'axios'
 import type ApiError from '../../interfaces/ApiError'
@@ -17,8 +20,14 @@ const initialState: ReviewState = {
   lastActionMessage: null,
 }
 
-const handleAxiosError = (err: unknown, defaultMessage: string): string => {
-  if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
+const handleAxiosError = (
+  err: unknown,
+  defaultMessage: string,
+): string => {
+  if (
+    axios.isAxiosError<ApiError>(err) &&
+    err.response?.data
+  ) {
     return String(err.response.data.error || defaultMessage)
   }
   return defaultMessage
@@ -27,37 +36,57 @@ const handleAxiosError = (err: unknown, defaultMessage: string): string => {
 // --- Thunks ---
 
 export const addOrUpdateReview = createAsyncThunk<
-  ReviewResponse, 
-  { snippetId: number; rating: number; comment: string }, 
+  ReviewResponse,
+  { snippetId: number; rating: number; comment: string },
   { rejectValue: string }
 >(
   'reviews/addOrUpdate',
-  async ({ snippetId, rating, comment }, { rejectWithValue }) => {
+  async (
+    { snippetId, rating, comment },
+    { rejectWithValue },
+  ) => {
     try {
-      return await reviewService.postReview(snippetId, rating, comment)
+      return await reviewService.postReview(
+        snippetId,
+        rating,
+        comment,
+      )
     } catch (err) {
-      return rejectWithValue(handleAxiosError(err, "Échec de l'envoi de la review"))
+      return rejectWithValue(
+        handleAxiosError(
+          err,
+          "Échec de l'envoi de la review",
+        ),
+      )
     }
-  }
+  },
 )
 
 export const removeReview = createAsyncThunk<
-  { snippetId: number; userId: number }, 
-  number, 
-  { rejectValue: string; state: { auth: { user: User | null } } }
+  { snippetId: number; userId: number },
+  number,
+  {
+    rejectValue: string
+    state: { auth: { user: User | null } }
+  }
 >(
   'reviews/delete',
   async (snippetId, { rejectWithValue, getState }) => {
     try {
       await reviewService.deleteReview(snippetId)
       const userId = getState().auth.user?.id
-      if (!userId) throw new Error("Utilisateur non trouvé")
-      
+      if (!userId) throw new Error('Utilisateur non trouvé')
+
       return { snippetId, userId }
     } catch (err) {
-      return rejectWithValue(handleAxiosError(err, "Échec de la suppression de la review"))
+      return rejectWithValue(
+        handleAxiosError(
+          err,
+          'Échec de la suppression de la review',
+        ),
+      )
     }
-  }
+  },
 )
 
 // --- Slice ---
@@ -69,7 +98,7 @@ const reviewSlice = createSlice({
     clearReviewStatus: (state) => {
       state.error = null
       state.lastActionMessage = null
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -78,14 +107,21 @@ const reviewSlice = createSlice({
         state.loading = true
         state.error = null
       })
-      .addCase(addOrUpdateReview.fulfilled, (state, action) => {
-        state.loading = false
-        state.lastActionMessage = action.payload.message
-      })
-      .addCase(addOrUpdateReview.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload ?? 'Une erreur est survenue'
-      })
+      .addCase(
+        addOrUpdateReview.fulfilled,
+        (state, action) => {
+          state.loading = false
+          state.lastActionMessage = action.payload.message
+        },
+      )
+      .addCase(
+        addOrUpdateReview.rejected,
+        (state, action) => {
+          state.loading = false
+          state.error =
+            action.payload ?? 'Une erreur est survenue'
+        },
+      )
 
       // Delete
       .addCase(removeReview.pending, (state) => {
@@ -97,7 +133,8 @@ const reviewSlice = createSlice({
       })
       .addCase(removeReview.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload ?? 'Erreur de suppression'
+        state.error =
+          action.payload ?? 'Erreur de suppression'
       })
   },
 })
