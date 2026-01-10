@@ -22,26 +22,39 @@ import { CreateSnippetModal } from '../components/CreateSnippetModal'
 import { CreateTopicModal } from '../components/CreateTopicModal'
 import { useAppSelector } from '../hooks/hooks'
 
-
 const MainFeed: React.FC = () => {
-
-  const [selectedTopic, setSelectedTopic] = useState<string>('All')
-  const [isSnippetModalOpen, setIsSnippetModalOpen] = useState(false)
-  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false)
+  const [selectedTopic, setSelectedTopic] =
+    useState<string>('All')
+  const [isSnippetModalOpen, setIsSnippetModalOpen] =
+    useState(false)
+  const [isTopicModalOpen, setIsTopicModalOpen] =
+    useState(false)
 
   const { user } = useAppSelector((state) => state.auth)
-  const { snippets, loading: snippetsLoading } = useAppSelector((state) => state.snippets)
-  const { topics, loading: topicsLoading } = useAppSelector((state) => state.topics)
-
-  console.log(snippets);
+  const { snippets, loading: snippetsLoading } =
+    useAppSelector((state) => state.snippets)
+  const { topics, loading: topicsLoading } = useAppSelector(
+    (state) => state.topics,
+  )
   const filteredSnippets =
     selectedTopic === 'All'
       ? snippets
-      : snippets.filter((s) => s.topic.name.toLowerCase() === selectedTopic.toLowerCase())
+      : snippets.filter(
+          (s) =>
+            s.topic.name.toLowerCase() ===
+            selectedTopic.toLowerCase(),
+        )
 
   if (snippetsLoading || topicsLoading) {
     return (
-      <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          height: '100vh',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <CircularProgress />
       </Box>
     )
@@ -52,14 +65,45 @@ const MainFeed: React.FC = () => {
       <CssBaseline />
       <Navbar user={user} />
 
-      <Box sx={{ display: 'flex', bgcolor: 'background.default', minHeight: '100vh', mt: '64px' }}>
-        <Box sx={{ display: { xs: 'none', md: 'block' }, width: '280px', flexShrink: 0 }}>
-          <TopicSidebar topics={topics} selectedTopic={selectedTopic} onSelectTopic={setSelectedTopic} />
+      <Box
+        sx={{
+          display: 'flex',
+          bgcolor: 'background.default',
+          minHeight: '100vh',
+          mt: '64px',
+        }}
+      >
+        <Box
+          sx={{
+            display: { xs: 'none', md: 'block' },
+            width: '280px',
+            flexShrink: 0,
+          }}
+        >
+          <TopicSidebar
+            topics={topics}
+            selectedTopic={selectedTopic}
+            onSelectTopic={setSelectedTopic}
+          />
         </Box>
 
-        <Box component="main" sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
-          <Container maxWidth="lg" sx={{ py: { xs: 3, md: 6 }, px: { xs: 2, md: 4 }, width: '100%' }}>
-            
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            overflow: 'auto',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <Container
+            maxWidth="lg"
+            sx={{
+              py: { xs: 3, md: 6 },
+              px: { xs: 2, md: 4 },
+              width: '100%',
+            }}
+          >
             <Box
               sx={{
                 mb: 6,
@@ -69,60 +113,135 @@ const MainFeed: React.FC = () => {
                 justifyContent: 'center',
                 position: 'relative',
                 width: '100%',
-                gap: { xs: 2, lg: 0 }
+                gap: { xs: 2, lg: 0 },
               }}
             >
-              <Typography variant="h4" sx={{ fontWeight: 800, textAlign: 'center' }}>
-                Community <span style={{ color: theme.palette.primary.main }}>Feed</span>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 800,
+                  textAlign: 'center',
+                }}
+              >
+                Community{' '}
+                <span
+                  style={{
+                    color: theme.palette.primary.main,
+                  }}
+                >
+                  Feed
+                </span>
               </Typography>
 
-              <Stack 
-                direction="row" 
-                spacing={2} 
-                sx={{ 
-                  position: { xs: 'static', lg: 'absolute' }, 
-                  right: { lg: 0 } 
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                  position: {
+                    xs: 'static',
+                    lg: 'absolute',
+                  },
+                  right: { lg: 0 },
                 }}
               >
                 <Button
                   variant="outlined"
                   startIcon={<FolderPlusIcon />}
                   onClick={() => setIsTopicModalOpen(true)}
-                  sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600 }}
+                  sx={{
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                  }}
                 >
                   New Topic
                 </Button>
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() => setIsSnippetModalOpen(true)}
-                  sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600, px: 3 }}
+                  onClick={() =>
+                    setIsSnippetModalOpen(true)
+                  }
+                  sx={{
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 3,
+                  }}
                 >
                   Create Snippet
                 </Button>
               </Stack>
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+              }}
+            >
               {filteredSnippets.length > 0 ? (
-                filteredSnippets.map((snip) => <SnippetCard key={snip.id} snippet={snip} />)
+                filteredSnippets.map((snip) => (
+                  <SnippetCard
+                    key={snip.id}
+                    snippet={snip}
+                  />
+                ))
               ) : (
                 <Paper
                   variant="outlined"
                   sx={{
-                    py: 10, px: 4, textAlign: 'center', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', borderRadius: 4, bgcolor: 'transparent',
-                    borderStyle: 'dashed', borderWidth: 2, borderColor: 'divider',
+                    py: 10,
+                    px: 4,
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    borderRadius: 4,
+                    bgcolor: 'transparent',
+                    borderStyle: 'dashed',
+                    borderWidth: 2,
+                    borderColor: 'divider',
                   }}
                 >
-                  <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: '50%', mb: 2 }}>
-                    <PostAddIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
+                  <Box
+                    sx={{
+                      bgcolor: 'action.hover',
+                      p: 2,
+                      borderRadius: '50%',
+                      mb: 2,
+                    }}
+                  >
+                    <PostAddIcon
+                      sx={{
+                        fontSize: 48,
+                        color: 'text.secondary',
+                      }}
+                    />
                   </Box>
-                  <Typography variant="h6" fontWeight={700} gutterBottom>Aucun snippet trouvé</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 300 }}>
-                    Il n'y a pas encore de contenu partagé pour le thème "{selectedTopic}".
+                  <Typography
+                    variant="h6"
+                    fontWeight={700}
+                    gutterBottom
+                  >
+                    Aucun snippet trouvé
                   </Typography>
-                  <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setIsSnippetModalOpen(true)}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 3, maxWidth: 300 }}
+                  >
+                    Il n'y a pas encore de contenu partagé
+                    pour le thème "{selectedTopic}".
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() =>
+                      setIsSnippetModalOpen(true)
+                    }
+                  >
                     Partager un code
                   </Button>
                 </Paper>
@@ -131,13 +250,25 @@ const MainFeed: React.FC = () => {
           </Container>
         </Box>
 
-        <Box sx={{ display: { xs: 'none', lg: 'block' }, width: '350px', flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: { xs: 'none', lg: 'block' },
+            width: '350px',
+            flexShrink: 0,
+          }}
+        >
           <InfoPanel />
         </Box>
       </Box>
 
-      <CreateSnippetModal open={isSnippetModalOpen} onClose={() => setIsSnippetModalOpen(false)} />
-      <CreateTopicModal open={isTopicModalOpen} onClose={() => setIsTopicModalOpen(false)} />
+      <CreateSnippetModal
+        open={isSnippetModalOpen}
+        onClose={() => setIsSnippetModalOpen(false)}
+      />
+      <CreateTopicModal
+        open={isTopicModalOpen}
+        onClose={() => setIsTopicModalOpen(false)}
+      />
     </ThemeProvider>
   )
 }

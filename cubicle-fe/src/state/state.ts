@@ -9,7 +9,7 @@ export const store = configureStore({
     auth: authReducer,
     snippets: snippetReducer,
     topics: topicReducer,
-    users: userReducer
+    users: userReducer,
   },
 })
 

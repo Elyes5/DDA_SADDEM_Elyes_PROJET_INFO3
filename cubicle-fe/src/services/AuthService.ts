@@ -49,9 +49,7 @@ export const authService = {
   },
 
   async checkAuth(): Promise<User> {
-    const { data } =
-      await api.get<User>('/api/auth/me')
+    const { data } = await api.get<User>('/api/auth/me')
     return data
   },
-
 }

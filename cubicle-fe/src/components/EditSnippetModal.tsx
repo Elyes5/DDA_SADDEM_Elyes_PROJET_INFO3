@@ -13,10 +13,16 @@ import {
   Typography,
   Box,
   CircularProgress,
-  Alert
+  Alert,
 } from '@mui/material'
-import { useAppDispatch, useAppSelector } from '../hooks/hooks'
-import { updateSnippet, clearSnippetError } from '../state/slices/snippetSlice'
+import {
+  useAppDispatch,
+  useAppSelector,
+} from '../hooks/hooks'
+import {
+  updateSnippet,
+  clearSnippetError,
+} from '../state/slices/snippetSlice'
 import CodeEditor from './CodeEditor'
 import type { Snippet } from '../models/Snippet'
 
@@ -26,24 +32,28 @@ interface EditSnippetModalProps {
   snippet: Snippet
 }
 
-export const EditSnippetModal: React.FC<EditSnippetModalProps> = ({ open, onClose, snippet }) => {
+export const EditSnippetModal: React.FC<
+  EditSnippetModalProps
+> = ({ open, onClose, snippet }) => {
   const dispatch = useAppDispatch()
-  
+
   const { topics } = useAppSelector((state) => state.topics)
-  const { loading, error } = useAppSelector((state) => state.snippets)
-  
-const [formData, setFormData] = useState({
+  const { loading, error } = useAppSelector(
+    (state) => state.snippets,
+  )
+
+  const [formData, setFormData] = useState({
     title: snippet.title || '',
     description: snippet.description || '',
     code_content: snippet.code_content || '',
     language: snippet.language || 'Javascript',
     topic_id: snippet.topic?.id?.toString() || '',
-    is_public: snippet.is_public ?? true
+    is_public: snippet.is_public ?? true,
   })
 
-    useEffect(() => {
-        if (!open) dispatch(clearSnippetError())
-    }, [open, dispatch])
+  useEffect(() => {
+    if (!open) dispatch(clearSnippetError())
+  }, [open, dispatch])
 
   useEffect(() => {
     if (!open) {
@@ -51,7 +61,11 @@ const [formData, setFormData] = useState({
     }
   }, [open, dispatch])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -60,26 +74,39 @@ const [formData, setFormData] = useState({
     setFormData((prev) => ({ ...prev, code_content: code }))
   }
 
-  const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, is_public: e.target.checked }))
+  const handleToggle = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      is_public: e.target.checked,
+    }))
   }
 
   const handleSubmit = async () => {
     const topicIdNum = Number(formData.topic_id)
-    
-    if (!formData.title || !formData.description || isNaN(topicIdNum) || !formData.code_content) return
 
-    const result = await dispatch(updateSnippet({
-      id: snippet.id,
-      snippetData: {
-        title: formData.title,
-        description: formData.description,
-        code_content: formData.code_content,
-        language: formData.language,
-        is_public: formData.is_public,
-        topic: snippet.topic
-      }
-    }))
+    if (
+      !formData.title ||
+      !formData.description ||
+      isNaN(topicIdNum) ||
+      !formData.code_content
+    )
+      return
+
+    const result = await dispatch(
+      updateSnippet({
+        id: snippet.id,
+        snippetData: {
+          title: formData.title,
+          description: formData.description,
+          code_content: formData.code_content,
+          language: formData.language,
+          is_public: formData.is_public,
+          topic: snippet.topic,
+        },
+      }),
+    )
 
     if (updateSnippet.fulfilled.match(result)) {
       onClose()
@@ -87,17 +114,32 @@ const [formData, setFormData] = useState({
   }
 
   return (
-    <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="md">
-      <DialogTitle sx={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Dialog
+      open={open}
+      onClose={loading ? undefined : onClose}
+      fullWidth
+      maxWidth="md"
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 700,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         Modifier le Snippet
         {loading && <CircularProgress size={24} />}
       </DialogTitle>
 
       <DialogContent dividers>
         <Stack spacing={3} sx={{ mt: 1 }}>
-          
           {error && (
-            <Alert severity="error" variant="filled" sx={{ borderRadius: 2 }}>
+            <Alert
+              severity="error"
+              variant="filled"
+              sx={{ borderRadius: 2 }}
+            >
               {error}
             </Alert>
           )}
@@ -130,13 +172,16 @@ const [formData, setFormData] = useState({
               name="topic_id"
               label="Thème"
               fullWidth
-              value={formData.topic_id} 
+              value={formData.topic_id}
               onChange={handleChange}
               required
               disabled={loading}
             >
               {topics.map((topic) => (
-                <MenuItem key={topic.id} value={topic.id.toString()}>
+                <MenuItem
+                  key={topic.id}
+                  value={topic.id.toString()}
+                >
                   {topic.name}
                 </MenuItem>
               ))}
@@ -151,14 +196,32 @@ const [formData, setFormData] = useState({
               onChange={handleChange}
               disabled={loading}
             >
-              {['Javascript', 'Python', 'Typescript', 'React JSX', 'SQL', 'Java', 'CSS'].map((lang) => (
-                <MenuItem key={lang} value={lang}>{lang}</MenuItem>
+              {[
+                'Javascript',
+                'Python',
+                'Typescript',
+                'React JSX',
+                'SQL',
+                'Java',
+                'CSS',
+              ].map((lang) => (
+                <MenuItem key={lang} value={lang}>
+                  {lang}
+                </MenuItem>
               ))}
             </TextField>
           </Stack>
 
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                mb: 1,
+                display: 'block',
+                fontWeight: 600,
+              }}
+            >
               CONTENU DU CODE
             </Typography>
             <CodeEditor
@@ -170,10 +233,10 @@ const [formData, setFormData] = useState({
 
           <FormControlLabel
             control={
-              <Switch 
-                checked={formData.is_public} 
-                onChange={handleToggle} 
-                color="primary" 
+              <Switch
+                checked={formData.is_public}
+                onChange={handleToggle}
+                color="primary"
                 disabled={loading}
               />
             }
@@ -183,16 +246,34 @@ const [formData, setFormData] = useState({
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} color="inherit" disabled={loading}>
+        <Button
+          onClick={onClose}
+          color="inherit"
+          disabled={loading}
+        >
           Annuler
         </Button>
-        <Button 
-          onClick={() => { void handleSubmit() }} 
-          variant="contained" 
-          disabled={loading || !formData.title || !formData.description || !formData.topic_id || !formData.code_content}
-          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+        <Button
+          onClick={() => {
+            void handleSubmit()
+          }}
+          variant="contained"
+          disabled={
+            loading ||
+            !formData.title ||
+            !formData.description ||
+            !formData.topic_id ||
+            !formData.code_content
+          }
+          startIcon={
+            loading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : null
+          }
         >
-          {loading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+          {loading
+            ? 'Enregistrement...'
+            : 'Enregistrer les modifications'}
         </Button>
       </DialogActions>
     </Dialog>

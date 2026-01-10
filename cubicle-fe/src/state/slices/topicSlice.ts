@@ -1,4 +1,7 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import {
+  createSlice,
+  createAsyncThunk,
+} from '@reduxjs/toolkit'
 import { topicService } from '../../services/TopicService'
 import type { Topic } from '../../models/Topic'
 import axios from 'axios'
@@ -16,8 +19,14 @@ const initialState: TopicState = {
   error: null,
 }
 
-const handleAxiosError = (err: unknown, defaultMessage: string): string => {
-  if (axios.isAxiosError<ApiError>(err) && err.response?.data) {
+const handleAxiosError = (
+  err: unknown,
+  defaultMessage: string,
+): string => {
+  if (
+    axios.isAxiosError<ApiError>(err) &&
+    err.response?.data
+  ) {
     const errorData = err.response.data
     return String(errorData.error || defaultMessage)
   }
@@ -26,26 +35,41 @@ const handleAxiosError = (err: unknown, defaultMessage: string): string => {
 
 // --- Thunks ---
 
-export const fetchTopics = createAsyncThunk<Topic[], void, { rejectValue: string }>(
-  'topics/fetchAll',
-  async (_, { rejectWithValue }) => {
-    try {
-      return await topicService.getAllTopics()
-    } catch (err) {
-      return rejectWithValue(handleAxiosError(err, 'Échec de la récupération des thèmes'))
-    }
+export const fetchTopics = createAsyncThunk<
+  Topic[],
+  void,
+  { rejectValue: string }
+>('topics/fetchAll', async (_, { rejectWithValue }) => {
+  try {
+    return await topicService.getAllTopics()
+  } catch (err) {
+    return rejectWithValue(
+      handleAxiosError(
+        err,
+        'Échec de la récupération des thèmes',
+      ),
+    )
   }
-)
+})
 
-export const createTopic = createAsyncThunk<Topic, Partial<Topic>, { rejectValue: string }>(
+export const createTopic = createAsyncThunk<
+  Topic,
+  Partial<Topic>,
+  { rejectValue: string }
+>(
   'topics/create',
   async (topicData, { rejectWithValue }) => {
     try {
       return await topicService.createTopic(topicData)
     } catch (err) {
-      return rejectWithValue(handleAxiosError(err, 'Échec de la création du thème'))
+      return rejectWithValue(
+        handleAxiosError(
+          err,
+          'Échec de la création du thème',
+        ),
+      )
     }
-  }
+  },
 )
 
 // --- Slice ---
@@ -71,7 +95,9 @@ const topicSlice = createSlice({
       })
       .addCase(fetchTopics.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload ?? 'Une erreur est survenue lors du chargement'
+        state.error =
+          action.payload ??
+          'Une erreur est survenue lors du chargement'
       })
 
       // Create Topic
@@ -85,7 +111,9 @@ const topicSlice = createSlice({
       })
       .addCase(createTopic.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload ?? 'Une erreur est survenue lors de la création'
+        state.error =
+          action.payload ??
+          'Une erreur est survenue lors de la création'
       })
   },
 })

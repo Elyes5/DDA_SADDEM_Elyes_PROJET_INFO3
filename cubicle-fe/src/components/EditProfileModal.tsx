@@ -13,7 +13,10 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material'
-import { useAppDispatch, useAppSelector } from '../hooks/hooks'
+import {
+  useAppDispatch,
+  useAppSelector,
+} from '../hooks/hooks'
 import { updateProfile } from '../state/slices/userSlice'
 import type { User } from '../models/User'
 
@@ -23,14 +26,14 @@ interface EditProfileModalProps {
   user: User
 }
 
-export const EditProfileModal: React.FC<EditProfileModalProps> = ({
-  open,
-  onClose,
-  user,
-}) => {
+export const EditProfileModal: React.FC<
+  EditProfileModalProps
+> = ({ open, onClose, user }) => {
   const dispatch = useAppDispatch()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const loading = useAppSelector((state) => state.users.loading)
+  const loading = useAppSelector(
+    (state) => state.users.loading,
+  )
   const [formData, setFormData] = useState({
     first_name: user.first_name,
     last_name: user.last_name,
@@ -39,7 +42,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     avatarPreview: user.avatar_url || '',
   })
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       setFormData((prev) => ({
@@ -66,16 +71,29 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         onClose()
       })
       .catch((err) => {
-        console.error('Erreur lors de la mise à jour :', err)
+        console.error(
+          'Erreur lors de la mise à jour :',
+          err,
+        )
       })
   }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 800 }}>Modifier mon profil</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+    >
+      <DialogTitle sx={{ fontWeight: 800 }}>
+        Modifier mon profil
+      </DialogTitle>
 
       <DialogContent dividers>
-        <Stack spacing={3} sx={{ mt: 1, alignItems: 'center' }}>
+        <Stack
+          spacing={3}
+          sx={{ mt: 1, alignItems: 'center' }}
+        >
           <Box sx={{ position: 'relative' }}>
             <Avatar
               src={formData.avatarPreview}
@@ -117,7 +135,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             fullWidth
             value={formData.first_name}
             onChange={(e) =>
-              setFormData({ ...formData, first_name: e.target.value })
+              setFormData({
+                ...formData,
+                first_name: e.target.value,
+              })
             }
           />
 
@@ -126,7 +147,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             fullWidth
             value={formData.last_name}
             onChange={(e) =>
-              setFormData({ ...formData, last_name: e.target.value })
+              setFormData({
+                ...formData,
+                last_name: e.target.value,
+              })
             }
           />
 
@@ -137,13 +161,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             rows={3}
             placeholder="Parlez-nous de vous..."
             value={formData.bio}
-            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                bio: e.target.value,
+              })
+            }
           />
         </Stack>
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} color="inherit" disabled={loading}>
+        <Button
+          onClick={onClose}
+          color="inherit"
+          disabled={loading}
+        >
           Annuler
         </Button>
         <Button

@@ -1,5 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { useAppSelector, useAppDispatch } from '../hooks/hooks'
+import {
+  useAppSelector,
+  useAppDispatch,
+} from '../hooks/hooks'
 import { fetchPublicSnippets } from '../state/slices/snippetSlice'
 import { fetchTopics } from '../state/slices/topicSlice'
 import { useEffect } from 'react'
