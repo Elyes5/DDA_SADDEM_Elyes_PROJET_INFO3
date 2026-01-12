@@ -48,7 +48,7 @@ Pour lancer le backend et la base de données localement :
 
 1.  **Cloner le dépôt :**
     ```bash
-    git clone [https://github.com/Elyes5/DDA_SADDEM_Elyes_PROJET_INFO3.git](https://github.com/Elyes5/DDA_SADDEM_Elyes_PROJET_INFO3.git)
+    git clone https://github.com/Elyes5/DDA_SADDEM_Elyes_PROJET_INFO3.git
     cd cubicle
     ```
 
