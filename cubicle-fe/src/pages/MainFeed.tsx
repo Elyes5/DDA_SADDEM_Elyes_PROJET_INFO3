@@ -104,44 +104,44 @@ const MainFeed: React.FC = () => {
               width: '100%',
             }}
           >
+            {/* FIXED: Use a 3-column grid so the title stays truly centered
+                and the buttons sit in their own column on the right */}
             <Box
               sx={{
                 mb: 6,
-                display: 'flex',
-                flexDirection: { xs: 'column', lg: 'row' },
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  lg: '1fr auto 1fr',
+                },
                 alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                width: '100%',
-                gap: { xs: 2, lg: 0 },
+                gap: 2,
               }}
             >
+              {/* Empty left spacer — only visible on lg+ to balance the buttons */}
+              <Box sx={{ display: { xs: 'none', lg: 'block' } }} />
+
+              {/* Title — always centered */}
               <Typography
                 variant="h4"
                 sx={{
                   fontWeight: 800,
                   textAlign: 'center',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Community{' '}
-                <span
-                  style={{
-                    color: theme.palette.primary.main,
-                  }}
-                >
+                <span style={{ color: theme.palette.primary.main }}>
                   Feed
                 </span>
               </Typography>
 
+              {/* Buttons — sit in the right column on lg, below title on mobile */}
               <Stack
                 direction="row"
                 spacing={2}
                 sx={{
-                  position: {
-                    xs: 'static',
-                    lg: 'absolute',
-                  },
-                  right: { lg: 0 },
+                  justifyContent: { xs: 'center', lg: 'flex-end' },
                 }}
               >
                 <Button
@@ -159,9 +159,7 @@ const MainFeed: React.FC = () => {
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() =>
-                    setIsSnippetModalOpen(true)
-                  }
+                  onClick={() => setIsSnippetModalOpen(true)}
                   sx={{
                     borderRadius: '12px',
                     textTransform: 'none',
@@ -238,9 +236,7 @@ const MainFeed: React.FC = () => {
                   <Button
                     variant="outlined"
                     startIcon={<AddIcon />}
-                    onClick={() =>
-                      setIsSnippetModalOpen(true)
-                    }
+                    onClick={() => setIsSnippetModalOpen(true)}
                   >
                     Partager un code
                   </Button>
