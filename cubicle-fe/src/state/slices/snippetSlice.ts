@@ -1,3 +1,4 @@
+// state/slices/snippetSlice.ts
 import {
   createSlice,
   createAsyncThunk,
@@ -87,7 +88,7 @@ export const createSnippet = createAsyncThunk<
   'snippets/create',
   async (snippetData, { rejectWithValue }) => {
     try {
-      return await snippetService.createSnippet(snippetData)
+      return await snippetService.createSnippet(snippetData as unknown as FormData)
     } catch (err) {
       return rejectWithValue(
         handleAxiosError(
@@ -99,9 +100,10 @@ export const createSnippet = createAsyncThunk<
   },
 )
 
+// Using FormData
 export const updateSnippet = createAsyncThunk<
   Snippet,
-  { id: number; snippetData: Partial<Snippet> },
+  { id: number; snippetData: FormData },
   { rejectValue: string }
 >(
   'snippets/update',

@@ -37,7 +37,7 @@ export const snippetService = {
   },
 
   createSnippet: async (
-    snippetData: Partial<Snippet>,
+    snippetData: FormData,
   ): Promise<Snippet> => {
     const { data } = await api.post<Snippet>(
       '/api/snippets/',
@@ -48,7 +48,7 @@ export const snippetService = {
 
   updateSnippet: async (
     snippetId: number,
-    snippetData: Partial<Snippet>,
+    snippetData: FormData,
   ): Promise<Snippet> => {
     const { data } = await api.put<Snippet>(
       `/api/snippets/${snippetId}/`,

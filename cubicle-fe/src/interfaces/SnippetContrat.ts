@@ -5,4 +5,5 @@ export interface CreateSnippetRequest {
   language?: string
   is_public: boolean
   topic_id: number
+  images?: File[]
 }

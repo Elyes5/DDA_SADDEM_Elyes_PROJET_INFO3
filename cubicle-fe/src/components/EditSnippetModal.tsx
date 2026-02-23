@@ -14,7 +14,10 @@ import {
   Box,
   CircularProgress,
   Alert,
+  IconButton,
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import PhotoCamera from '@mui/icons-material/PhotoCamera'
 import {
   useAppDispatch,
   useAppSelector,
@@ -25,6 +28,11 @@ import {
 } from '../state/slices/snippetSlice'
 import CodeEditor from './CodeEditor'
 import type { Snippet } from '../models/Snippet'
+import type { SnippetImage } from '../models/SnippetImage'
+interface ImageItem {
+  file: File
+  previewUrl: string
+}
 
 interface EditSnippetModalProps {
   open: boolean
@@ -51,15 +59,53 @@ export const EditSnippetModal: React.FC<
     is_public: snippet.is_public ?? true,
   })
 
-  useEffect(() => {
-    if (!open) dispatch(clearSnippetError())
-  }, [open, dispatch])
+  const [existingImages, setExistingImages] = useState<SnippetImage[]>(snippet.images || [])
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([])
+  const [newImages, setNewImages] = useState<ImageItem[]>([])
 
+  // Pattern React pour synchroniser si la prop change (sans useEffect)
+  const [prevSnippetId, setPrevSnippetId] = useState(snippet.id)
+
+  if (snippet.id !== prevSnippetId) {
+    setPrevSnippetId(snippet.id)
+    setFormData({
+      title: snippet.title || '',
+      description: snippet.description || '',
+      code_content: snippet.code_content || '',
+      language: snippet.language || 'Javascript',
+      topic_id: snippet.topic?.id?.toString() || '',
+      is_public: snippet.is_public ?? true,
+    })
+    setExistingImages(snippet.images || [])
+    setDeletedImageIds([])
+    newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+    setNewImages([])
+  }
   useEffect(() => {
-    if (!open) {
-      dispatch(clearSnippetError())
+    return () => {
+      newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl))
     }
-  }, [open, dispatch])
+  }, [newImages])
+
+  const handleCloseModal = () => {
+    newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+
+    // Réinitialisation explicite à la fermeture
+    setNewImages([])
+    setDeletedImageIds([])
+    setExistingImages(snippet.images || [])
+    setFormData({
+      title: snippet.title || '',
+      description: snippet.description || '',
+      code_content: snippet.code_content || '',
+      language: snippet.language || 'Javascript',
+      topic_id: snippet.topic?.id?.toString() || '',
+      is_public: snippet.is_public ?? true,
+    })
+
+    dispatch(clearSnippetError())
+    onClose()
+  }
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -83,6 +129,32 @@ export const EditSnippetModal: React.FC<
     }))
   }
 
+  const handleRemoveExistingImage = (imageId: number) => {
+    setDeletedImageIds((prev) => [...prev, imageId])
+    setExistingImages((prev) => prev.filter((img) => img.id !== imageId))
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }))
+
+      setNewImages((prev) => [...prev, ...selectedFiles])
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveNewImage = (index: number) => {
+    setNewImages((prev) => {
+      const updated = [...prev]
+      URL.revokeObjectURL(updated[index].previewUrl)
+      updated.splice(index, 1)
+      return updated
+    })
+  }
+
   const handleSubmit = async () => {
     const topicIdNum = Number(formData.topic_id)
 
@@ -94,29 +166,38 @@ export const EditSnippetModal: React.FC<
     )
       return
 
+    const payloadData = new FormData()
+    payloadData.append('title', formData.title)
+    payloadData.append('description', formData.description)
+    payloadData.append('code_content', formData.code_content)
+    payloadData.append('language', formData.language)
+    payloadData.append('is_public', formData.is_public.toString())
+    payloadData.append('topic_id', topicIdNum.toString())
+
+    if (deletedImageIds.length > 0) {
+      payloadData.append('deleted_image_ids', deletedImageIds.join(','))
+    }
+
+    newImages.forEach((img) => {
+      payloadData.append('images', img.file)
+    })
+
     const result = await dispatch(
       updateSnippet({
         id: snippet.id,
-        snippetData: {
-          title: formData.title,
-          description: formData.description,
-          code_content: formData.code_content,
-          language: formData.language,
-          is_public: formData.is_public,
-          topic: snippet.topic,
-        },
+        snippetData: payloadData,
       }),
     )
 
     if (updateSnippet.fulfilled.match(result)) {
-      onClose()
+      handleCloseModal()
     }
   }
 
   return (
     <Dialog
       open={open}
-      onClose={loading ? undefined : onClose}
+      onClose={loading ? undefined : handleCloseModal}
       fullWidth
       maxWidth="md"
     >
@@ -222,6 +303,128 @@ export const EditSnippetModal: React.FC<
                 fontWeight: 600,
               }}
             >
+              IMAGES
+            </Typography>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<PhotoCamera />}
+              disabled={loading}
+              sx={{ mb: 2 }}
+            >
+              Ajouter des images
+              <input
+                type="file"
+                hidden
+                multiple
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+            </Button>
+
+            {(existingImages.length > 0 || newImages.length > 0) && (
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                {/* Images Existantes */}
+                {existingImages.map((img) => (
+                  <Box
+                    key={`existing-${img.id}`}
+                    sx={{
+                      position: 'relative',
+                      width: 100,
+                      height: 100,
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <img
+                      src={img.url}
+                      alt="Existing"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveExistingImage(img.id)}
+                      disabled={loading}
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        color: 'white',
+                        padding: '4px',
+                        '&:hover': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+
+                {/* Nouvelles Images */}
+                {newImages.map((img, index) => (
+                  <Box
+                    key={img.previewUrl}
+                    sx={{
+                      position: 'relative',
+                      width: 100,
+                      height: 100,
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      border: '2px dashed',
+                      borderColor: 'primary.main',
+                    }}
+                  >
+                    <img
+                      src={img.previewUrl}
+                      alt={`New preview ${index}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveNewImage(index)}
+                      disabled={loading}
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        color: 'white',
+                        padding: '4px',
+                        '&:hover': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Box>
+
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                mb: 1,
+                display: 'block',
+                fontWeight: 600,
+              }}
+            >
               CONTENU DU CODE
             </Typography>
             <CodeEditor
@@ -247,7 +450,7 @@ export const EditSnippetModal: React.FC<
 
       <DialogActions sx={{ p: 3 }}>
         <Button
-          onClick={onClose}
+          onClick={handleCloseModal}
           color="inherit"
           disabled={loading}
         >

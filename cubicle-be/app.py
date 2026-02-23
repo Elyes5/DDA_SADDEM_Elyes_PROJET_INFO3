@@ -2,7 +2,6 @@ from flask import Flask, send_from_directory
 from dotenv import load_dotenv
 import os
 from flask_migrate import Migrate
-from controllers import followers
 from extensions.otp_ext import db, mail, jwt
 from config.config_env import config_map
 from config.config_ca import init_ssl
@@ -52,7 +51,6 @@ jwt.init_app(app)
 migrate = Migrate(app, db)
 
 # ===== BLUEPRINTS =====
-app.register_blueprint(followers.followers_bp, url_prefix='/api/followers')
 register_routes(app)
 
 # ===== ROUTES =====
