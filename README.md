@@ -32,8 +32,130 @@ L'application est déployée et accessible via les adresses suivantes :
 - **Backend (API Documentation/Endpoint)** : [http://api.cubicleapp.tech/](http://api.cubicleapp.tech/)
 
 ---
+Voici le README.md mis à jour, incluant la section avec le fichier .env.example ajoutée juste avant la section sur le développement local (et avec la numérotation ajustée en conséquence) :
 
-## 4. Développement Local
+Markdown
+# 💻 Cubicle - Réseau Social de Partage de Snippets de Code
+
+[![GitHub](https://img.shields.io/github/last-commit/Elyes5/DDA_SADDEM_Elyes_PROJET_INFO3?color=green)](https://github.com/Elyes5/DDA_SADDEM_Elyes_PROJET_INFO3.git)
+
+## 1. Contexte du Projet
+
+Ce projet, **Cubicle**, est une application web dont l'objectif est de fournir une **API RESTful** pour un réseau social spécialisé dans le **partage et la revue de petits blocs de code (snippets)**.
+
+L'application vise à formaliser les échanges entre développeurs en permettant de poster des snippets, de les classer par **sujet d'expertise (topic)**, de les commenter (revues par les pairs), de **liker** et de suivre les autres contributeurs.
+
+---
+
+## 2. Architecture Technique et Stack
+
+L'application est conçue selon une architecture modulaire et conteneurisée.
+
+- **Backend/API RESTful** : Développé en **Python/Flask**.
+- **Frontend** : **React** avec **Vite** (TypeScript).
+- **Base de Données** : **MySQL** (relationnelle).
+- **ORM** : Utilisation d'**SQLAlchemy** via **Flask-SQLAlchemy**.
+- **Conteneurisation & Orchestration** : **Docker**, **Kubernetes (K8s)** sur **Infomaniak**.
+- **Hébergement Frontend** : **Netlify**.
+- **Hébergement Backend** : **Infomaniak**.
+
+---
+
+## 3. Accès en Production
+
+L'application est déployée et accessible via les adresses suivantes :
+
+- **Frontend (Application Web)** : [https://cubicleapp.tech/](https://cubicleapp.tech/)
+- **Backend (API Documentation/Endpoint)** : [http://api.cubicleapp.tech/](http://api.cubicleapp.tech/)
+
+---
+
+## 4. Configuration des Variables d'Environnement (.env.example)
+
+Le projet nécessite des variables d'environnement pour fonctionner. Ces fichiers contiennent des informations sensibles (crédentials BDD, clés secrètes, URLs) et sont **ignorés par Git** pour des raisons de sécurité.
+
+Avant de lancer le projet, assurez-vous de créer un fichier `.env` à la racine de votre backend en utilisant l'exemple ci-dessous :
+
+```env
+# ===== PROD DB =====
+PROD_DB_USER=your_prod_db_user
+PROD_DB_PASSWORD=your_prod_db_password
+PROD_DB_HOST=your_prod_db_host
+PROD_DB_PORT=24637
+PROD_DB_NAME=defaultdb
+
+# ===== DEV DB =====
+DEV_DB_USER=root
+DEV_DB_PASSWORD=root
+DEV_DB_HOST=localhost
+DEV_DB_PORT=3306
+DEV_DB_NAME=cubicle
+
+# ===== INFOMANIAK =====
+SMTP_SERVER=mail.infomaniak.com
+SMTP_PORT=587
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+SMTP_USER=your_smtp_user@example.com
+SMTP_PASSWORD=your_smtp_password
+SMTP_DEFAULT_SENDER=your_smtp_sender@example.com
+
+# ===== DEV ENDPOINTS =====
+DEV_API_URL=http://localhost:5000/
+
+# ===== PROD ENDPOINTS =====
+PROD_API_URL=[https://api.yourdomain.com/](https://api.yourdomain.com/)
+
+# ===== ENVIRONMENT =====
+FLASK_ENV=development
+
+# ===== JWT/COOKIE SECRET DEV =====
+DEV_COOKIE_SECRET_KEY=your_dev_cookie_secret_key_here
+DEV_JWT_SECRET_KEY=your_dev_jwt_secret_key_here
+
+# ===== JWT/COOKIE SECRET PROD =====
+PROD_COOKIE_SECRET_KEY=your_prod_cookie_secret_key_here
+PROD_JWT_SECRET_KEY=your_prod_jwt_secret_key_here
+
+# ===== JWT CONFIGURATION =====
+JWT_ACCESS_TOKEN_EXPIRES=86400
+JWT_REFRESH_TOKEN_EXPIRES=604800
+
+# ===== COOKIE CONFIGURATION =====
+# DEV COOKIE CONFIGURATION
+DEV_JWT_COOKIE_SECURE=false
+DEV_JWT_COOKIE_SAMESITE=Lax
+DEV_JWT_COOKIE_CSRF_PROTECT=true
+DEV_JWT_ACCESS_CSRF_COOKIE_HTTPONLY=false
+DEV_JWT_REFRESH_CSRF_COOKIE_HTTPONLY=false
+
+# PROD COOKIE CONFIGURATION
+PROD_JWT_COOKIE_SECURE=true
+PROD_JWT_COOKIE_SAMESITE=Lax
+PROD_JWT_COOKIE_DOMAIN=.yourdomain.com
+PROD_JWT_COOKIE_CSRF_PROTECT=true
+PROD_JWT_ACCESS_CSRF_COOKIE_HTTPONLY=false
+PROD_JWT_REFRESH_CSRF_COOKIE_HTTPONLY=false
+PROD_JWT_COOKIE_HTTPONLY=True
+
+# ===== AZURE IMAGE STORAGE =====
+AZURE_STORAGE_ACCOUNT_NAME=your_azure_storage_account_name
+AZURE_STORAGE_ACCOUNT_KEY=your_azure_storage_account_key_here
+AZURE_STORAGE_CONTAINER_NAME=images
+
+# ===== LOCAL IMAGE STORAGE =====
+LOCAL_UPLOAD_FOLDER=uploads/avatars
+LOCAL_UPLOAD_SNIPPETS_FOLDER=uploads
+
+# ==== FRONT END URL ====
+PROD_FRONT_END_ORIGIN=[https://yourdomain.com](https://yourdomain.com)
+PROD_FRONT_END_ORIGIN_ALIAS=[https://www.yourdomain.com](https://www.yourdomain.com)
+DEV_FRONT_END_ORIGIN=http://localhost:5173
+```
+
+---
+
+## 5. Développement Local
 
 > **⚠️ Configuration Requise : Fichiers `.env`**
 > Le projet nécessite des variables d'environnement pour fonctionner. Ces fichiers contiennent des informations sensibles (crédentials BDD, clés secrètes, URLs) et sont **ignorés par Git** pour des raisons de sécurité.
@@ -83,7 +205,7 @@ Le frontend utilise **Vite** pour un environnement de développement rapide. Des
 
 ---
 
-## 5. Déploiement et CI/CD
+## 6. Déploiement et CI/CD
 
 Le projet intègre un pipeline **CI/CD** complet automatisant le déploiement du backend vers un cluster Kubernetes hébergé chez **Infomaniak** et du frontend sur **Netlify**.
 
@@ -101,7 +223,7 @@ Le déploiement sur Infomaniak repose sur une configuration robuste :
 
 ---
 
-## 6. Modélisation des Données et Relations
+## 7. Modélisation des Données et Relations
 
 Le schéma de base de données est structuré pour répondre aux exigences de la SAE concernant les trois types de relations obligatoires.
 
@@ -120,7 +242,7 @@ Voici le diagramme résultant:
 
 ---
 
-## 7. Exemples de Routes API REST (Interface et Démonstration)
+## 8. Exemples de Routes API REST (Interface et Démonstration)
 
 L'API utilise les verbes HTTP standards (GET, POST, PUT, DELETE). Voici les routes actuellement implémentées dans le backend (basées sur les contrôleurs Flask).
 

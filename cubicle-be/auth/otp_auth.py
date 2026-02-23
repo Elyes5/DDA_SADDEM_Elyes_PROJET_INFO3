@@ -2,7 +2,8 @@ from datetime import timezone
 import os
 from flask import request, jsonify, Blueprint
 from flask_mail import Message
-from flask_jwt_extended import create_access_token, set_access_cookies, create_refresh_token, set_refresh_cookies
+from flask_jwt_extended import create_access_token, set_access_cookies, create_refresh_token, set_refresh_cookies, \
+    unset_jwt_cookies
 import secrets
 from sqlalchemy.exc import IntegrityError
 from flask import current_app
@@ -347,3 +348,10 @@ def edit_profile():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Error updating profile : ${str(e)}"}), 500
+
+@auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    response = jsonify({"message": "Logout successful"})
+    unset_jwt_cookies(response)
+    return response, 200

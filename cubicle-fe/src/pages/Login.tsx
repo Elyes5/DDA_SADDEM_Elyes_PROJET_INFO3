@@ -29,8 +29,8 @@ import {
 import {
   sendAuthEmail,
   verifyPasscode,
-  logoutUser,
   resetError,
+  resetAuthStep,
 } from '../state/slices/authSlice.ts'
 
 const CubicleLogo = (props: SVGProps<SVGSVGElement>) => (
@@ -76,10 +76,10 @@ const Login: React.FC = () => {
   }
 
   const handleBack = () => {
-    // Call server-side logout to clear cookies and reset local state
-    void dispatch(logoutUser())
+    setEmail('')
     setPasscode('')
     dispatch(resetError())
+    dispatch(resetAuthStep())
   }
 
   // Custom styles

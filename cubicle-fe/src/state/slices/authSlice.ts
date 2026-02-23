@@ -1,17 +1,10 @@
-import {
-  createSlice,
-  createAsyncThunk,
-  type PayloadAction,
-} from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import axios from 'axios'
-import {
-  authService,
-  type AuthResponse,
-} from '../../services/AuthService'
+import { type AuthResponse, authService } from '../../services/AuthService'
 import type { User } from '../../models/User'
 import type ApiError from '../../interfaces/ApiError'
-import { followUser, unfollowUser } from './userSlice'
-import { updateProfile } from './userSlice'
+import { followUser, unfollowUser, updateProfile } from './userSlice'
+
 interface AuthState {
   user: User | null
   loading: boolean
@@ -22,7 +15,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  loading: true,
+  loading: true, // Note: you might want this to be false initially unless you immediately dispatch checkAuth
   error: null,
   emailSent: false,
   currentEmail: null,
@@ -36,8 +29,7 @@ export const checkAuth = createAsyncThunk<
   { rejectValue: string }
 >('auth/checkAuth', async (_, { rejectWithValue }) => {
   try {
-    const response = await authService.checkAuth()
-    return response
+    return await authService.checkAuth()
   } catch {
     return rejectWithValue('Aucune session active')
   }
@@ -102,8 +94,7 @@ export const registerUser = createAsyncThunk<
   'auth/register',
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await authService.register(formData)
-      return response
+      return await authService.register(formData)
     } catch (err) {
       if (
         axios.isAxiosError<ApiError>(err) &&
@@ -141,6 +132,12 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     resetError(state) {
+      state.error = null
+    },
+    // Nouvelle action ajoutée ici
+    resetAuthStep(state) {
+      state.emailSent = false
+      state.currentEmail = null
       state.error = null
     },
   },
@@ -269,5 +266,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { resetError } = authSlice.actions
+export const { resetError, resetAuthStep } = authSlice.actions
 export default authSlice.reducer
