@@ -1,431 +1,402 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardActions,
   Avatar,
-  Typography,
-  IconButton,
-  Chip,
   Box,
-  Divider,
   Button,
   Collapse,
-  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
   InputAdornment,
   Rating,
   Stack,
+  TextField,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  Typography,
 } from '@mui/material'
 import {
   Favorite,
   FavoriteBorder,
   ChatBubbleOutline,
   ContentCopy,
-  PersonAddOutlined,
-  PersonRemoveOutlined,
   Send,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
+  EditOutlined as EditIcon,
+  DeleteOutline as DeleteIcon,
   WarningAmberRounded,
+  Check,
+  ExpandMore,
+  ExpandLess,
 } from '@mui/icons-material'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import type { Snippet } from '../models/Snippet'
-import {
-  useAppSelector,
-  useAppDispatch,
-} from '../hooks/hooks'
-import {
-  toggleLikeSnippet,
-  deleteSnippet,
-} from '../state/slices/snippetSlice'
+import { useAppSelector, useAppDispatch } from '../hooks/hooks'
+import { toggleLikeSnippet, deleteSnippet } from '../state/slices/snippetSlice'
 import { addOrUpdateReview } from '../state/slices/reviewSlice'
-import {
-  followUser,
-  unfollowUser,
-} from '../state/slices/userSlice'
+import { followUser, unfollowUser } from '../state/slices/userSlice'
 import { EditSnippetModal } from '../components/EditSnippetModal'
 
 interface SnippetCardProps {
   snippet: Snippet
 }
 
-export const SnippetCard: React.FC<SnippetCardProps> = ({
-  snippet,
-}) => {
+const LANG_COLORS: Record<string, string> = {
+  javascript: '#F0DB4F',
+  typescript: '#3178C6',
+  python: '#3572A5',
+  rust: '#CE412B',
+  go: '#00ACD7',
+  java: '#B07219',
+  css: '#563D7C',
+  html: '#E34C26',
+  ruby: '#701516',
+  php: '#4F5D95',
+  swift: '#FA7343',
+  kotlin: '#A97BFF',
+  csharp: '#178600',
+  cpp: '#F34B7D',
+  bash: '#4EAA25',
+}
+
+function getLangColor(lang?: string | null): string {
+  return LANG_COLORS[lang?.toLowerCase() ?? ''] ?? '#9E9E9E'
+}
+
+export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-
   const { user } = useAppSelector((state) => state.auth)
 
   const [expanded, setExpanded] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] =
-    useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] =
-    useState(false)
-
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [reviewText, setReviewText] = useState('')
   const [rating, setRating] = useState<number | null>(5)
+  const [copied, setCopied] = useState(false)
 
-  const isLiked = snippet.likes?.some(
-    (u) => u.id === user?.id,
-  )
+  const isLiked = snippet.likes?.some((u) => u.id === user?.id)
   const isOwner = user?.id === snippet.author.id
-  const isFollowing =
-    user?.following_ids?.includes(snippet.author.id) ??
-    false
+  const isFollowing = user?.following_ids?.includes(snippet.author.id) ?? false
+  const langColor = getLangColor(snippet.language)
 
-  const goToProfile = (userId: number) => {
-    void navigate(`/profile/${userId}`)
-  }
+  const goToProfile = (userId: number) => void navigate(`/profile/${userId}`)
 
-  const handleCopyCode = (): void => {
+  const handleCopyCode = () => {
     if (snippet.code_content) {
-      void navigator.clipboard.writeText(
-        snippet.code_content,
-      )
+      void navigator.clipboard.writeText(snippet.code_content)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     }
   }
 
-  const handleLike = (): void => {
+  const handleLike = () => {
     if (!user) return
-    void dispatch(
-      toggleLikeSnippet({
-        id: snippet.id,
-        isLike: !isLiked,
-      }),
-    )
+    void dispatch(toggleLikeSnippet({ id: snippet.id, isLike: !isLiked }))
   }
 
-  const handleConfirmDelete = (): void => {
+  const handleConfirmDelete = () => {
     void dispatch(deleteSnippet(snippet.id))
     setIsDeleteModalOpen(false)
   }
 
-  const handleFollow = (): void => {
+  const handleFollow = () => {
     if (!user || isOwner) return
-    if (isFollowing) {
-      void dispatch(unfollowUser(snippet.author.id))
-    } else {
-      void dispatch(followUser(snippet.author.id))
-    }
+    isFollowing
+      ? void dispatch(unfollowUser(snippet.author.id))
+      : void dispatch(followUser(snippet.author.id))
   }
 
-  const handleSubmitReview = (): void => {
+  const handleSubmitReview = () => {
     if (!reviewText.trim() || !user || isOwner) return
-    void dispatch(
-      addOrUpdateReview({
-        snippetId: snippet.id,
-        rating: rating ?? 5,
-        comment: reviewText,
-      }),
-    )
+    void dispatch(addOrUpdateReview({ snippetId: snippet.id, rating: rating ?? 5, comment: reviewText }))
     setReviewText('')
     setRating(5)
   }
 
-  const formattedDate = new Date(
-    snippet.creation_date,
-  ).toLocaleDateString('fr-FR', {
+  const formattedDate = new Date(snippet.creation_date).toLocaleDateString('fr-FR', {
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
   })
 
   return (
     <>
-      <Card
+      <Box
         sx={{
-          mb: 4,
-          borderRadius: 3,
-          transition: 'border-color 0.2s ease',
-          border: '1px solid',
-          borderColor: 'divider',
-          boxShadow: 'none',
-          '&:hover': { borderColor: 'primary.main' },
+          bgcolor: '#fff',
+          border: '1px solid #e0e0e0',
+          borderRadius: '12px',
+          mb: 2,
+          overflow: 'hidden',
         }}
       >
-        <CardHeader
-          avatar={
+        {/* ── HEADER ── */}
+        <Box sx={{ p: '16px 20px 12px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <Avatar
               src={snippet.author.avatar_url ?? undefined}
-              sx={{
-                bgcolor: 'primary.main',
-                cursor: 'pointer',
-              }}
               onClick={() => goToProfile(snippet.author.id)}
+              sx={{
+                width: 46,
+                height: 46,
+                fontWeight: 700,
+                fontSize: '1.1rem',
+                cursor: 'pointer',
+                bgcolor: langColor + '22',
+                color: langColor,
+                border: `2px solid ${langColor}44`,
+              }}
             >
               {snippet.author.username[0].toUpperCase()}
             </Avatar>
-          }
-          title={
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-            >
-              <Typography
-                variant="subtitle1"
-                fontWeight={800}
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': { color: 'primary.main' },
-                }}
-                onClick={() =>
-                  goToProfile(snippet.author.id)
-                }
-              >
-                {snippet.author.username}
-              </Typography>
-              {!isOwner && user && (
-                <Button
-                  size="small"
-                  onClick={handleFollow}
-                  variant={
-                    isFollowing ? 'outlined' : 'text'
-                  }
-                  color={
-                    isFollowing ? 'inherit' : 'primary'
-                  }
-                  startIcon={
-                    isFollowing ? (
-                      <PersonRemoveOutlined />
-                    ) : (
-                      <PersonAddOutlined />
-                    )
-                  }
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    fontSize: '0.7rem',
-                  }}
+
+            <Box>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography
+                  fontWeight={700}
+                  fontSize="0.95rem"
+                  sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' }, color: '#1a1a1a' }}
+                  onClick={() => goToProfile(snippet.author.id)}
                 >
-                  {isFollowing ? 'Unfollow' : 'Follow'}
-                </Button>
-              )}
-            </Stack>
-          }
-          subheader={formattedDate}
-          action={
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              mt={1}
-              mr={1}
-            >
-              {isOwner && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tooltip title="Modifier">
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        setIsEditModalOpen(true)
-                      }
-                      color="primary"
+                  {snippet.author.username}
+                </Typography>
+
+                {!isOwner && user && (
+                  <>
+                    <Typography sx={{ color: '#bbb', fontSize: '0.9rem' }}>•</Typography>
+                    <Typography
+                      onClick={handleFollow}
+                      sx={{
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        color: isFollowing ? '#777' : '#0a66c2',
+                        cursor: 'pointer',
+                        '&:hover': { textDecoration: 'underline' },
+                      }}
                     >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Supprimer">
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        setIsDeleteModalOpen(true)
-                      }
-                      color="error"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Divider
-                    orientation="vertical"
-                    flexItem
-                    sx={{ mx: 0.5 }}
-                  />
+                      {isFollowing ? 'Suivi ✓' : '+ Suivre'}
+                    </Typography>
+                  </>
+                )}
+              </Stack>
+
+              <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+                {snippet.topic && (
+                  <>
+                    <Typography fontSize="0.78rem" color="text.secondary">{snippet.topic.name}</Typography>
+                    <Typography fontSize="0.78rem" color="text.secondary">·</Typography>
+                  </>
+                )}
+                <Typography fontSize="0.78rem" color="text.secondary">{formattedDate}</Typography>
+                <Typography fontSize="0.78rem" color="text.secondary">·</Typography>
+                <Stack direction="row" spacing={0.4} alignItems="center">
+                  <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: langColor }} />
+                  <Typography fontSize="0.78rem" sx={{ color: '#555', fontWeight: 500 }}>
+                    {snippet.language ?? 'Plaintext'}
+                  </Typography>
                 </Stack>
-              )}
+              </Stack>
+            </Box>
+          </Stack>
 
-              {snippet.topic && (
-                <Chip
-                  label={snippet.topic.name}
-                  size="small"
-                  color="primary"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '0.65rem',
-                  }}
-                />
-              )}
-              <Chip
-                label={snippet.language ?? 'Text'}
-                size="small"
-                variant="outlined"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.65rem',
-                }}
-              />
+          {isOwner && (
+            <Stack direction="row" spacing={0.25} mt={0.25}>
+              <Tooltip title="Modifier">
+                <IconButton size="small" onClick={() => setIsEditModalOpen(true)} sx={{ color: '#888', '&:hover': { color: '#0a66c2', bgcolor: '#e8f0fc' } }}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Supprimer">
+                <IconButton size="small" onClick={() => setIsDeleteModalOpen(true)} sx={{ color: '#888', '&:hover': { color: '#d32f2f', bgcolor: '#fdecea' } }}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             </Stack>
-          }
-        />
+          )}
+        </Box>
 
-        <CardContent sx={{ pt: 0 }}>
-          <Typography variant="h6" fontWeight={800} mb={1}>
+        {/* ── BODY ── */}
+        <Box sx={{ px: '20px', pb: '16px' }}>
+          <Typography fontWeight={800} fontSize="1.1rem" color="#1a1a1a" mb={0.75} lineHeight={1.3}>
             {snippet.title}
           </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            mb={2}
-          >
+
+          <Typography fontSize="0.9rem" color="#444" lineHeight={1.65} mb={2} sx={{ whiteSpace: 'pre-line' }}>
             {snippet.description}
           </Typography>
 
-          <Box
-            sx={{
-              position: 'relative',
-              borderRadius: 2,
-              overflow: 'hidden',
-            }}
-          >
-            <IconButton
-              size="small"
-              onClick={handleCopyCode}
-              sx={{
-                position: 'absolute',
-                right: 8,
-                top: 8,
-                zIndex: 2,
-                color: 'white',
-                bgcolor: 'rgba(255,255,255,0.2)',
-                '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.3)',
-                },
-              }}
-            >
-              <ContentCopy fontSize="inherit" />
-            </IconButton>
+          {/* Images */}
+          {snippet.images && snippet.images.length > 0 && (
+            <Box mb={2}>
+              {snippet.images.length === 1 ? (
+                <Box sx={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e8e8e8', display: 'flex', justifyContent: 'center', bgcolor: '#fafafa' }}>
+                  <img src={snippet.images[0].url} alt="Attachment" style={{ maxWidth: '100%', maxHeight: 400, objectFit: 'contain', display: 'block' }} />
+                </Box>
+              ) : (
+                <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { height: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#e0e0e0', borderRadius: 4 } }}>
+                  {snippet.images.map((img) => (
+                    <Box key={img.id} sx={{ minWidth: 200, height: 150, borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid #e8e8e8', bgcolor: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={img.url} alt={`Attachment ${img.id}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          )}
+
+          {/* Code block */}
+          <Box sx={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+              <Stack direction="row" spacing={0.6} mr={1.5}>
+                {['#FF5F57', '#FEBC2E', '#28C840'].map((c, i) => (
+                  <Box key={i} sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: c }} />
+                ))}
+              </Stack>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: langColor }} />
+                <Typography sx={{ fontSize: '0.75rem', color: '#888', fontFamily: 'monospace' }}>
+                  {snippet.language?.toLowerCase() ?? 'plaintext'}
+                </Typography>
+              </Stack>
+              <Box flex={1} />
+              <Tooltip title={copied ? 'Copié !' : 'Copier'}>
+                <IconButton size="small" onClick={handleCopyCode} sx={{ color: copied ? '#2e7d32' : '#999', '&:hover': { bgcolor: '#ebebeb' } }}>
+                  {copied ? <Check sx={{ fontSize: '0.9rem' }} /> : <ContentCopy sx={{ fontSize: '0.9rem' }} />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+
             <SyntaxHighlighter
-              language={
-                snippet.language?.toLowerCase() ??
-                'javascript'
-              }
-              style={vscDarkPlus}
-              customStyle={{
-                padding: '20px',
-                margin: 0,
-                fontSize: '0.8rem',
-                backgroundColor: '#1e1e1e',
-              }}
+              language={snippet.language?.toLowerCase() ?? 'javascript'}
+              style={oneLight}
+              customStyle={{ padding: '16px 20px', margin: 0, fontSize: '0.82rem', lineHeight: '1.6', backgroundColor: '#fafafa' }}
+              showLineNumbers
+              lineNumberStyle={{ color: '#ccc', userSelect: 'none', paddingRight: '12px', minWidth: '2.2em' }}
             >
               {String(snippet.code_content ?? '')}
             </SyntaxHighlighter>
           </Box>
-        </CardContent>
+        </Box>
 
-        <CardActions
-          sx={{
-            px: 2,
-            py: 1,
-            justifyContent: 'space-between',
-            bgcolor: 'grey.50',
-          }}
-        >
-          <Stack direction="row" spacing={2}>
-            <Box display="flex" alignItems="center">
-              <IconButton
-                size="small"
-                onClick={handleLike}
-                color={isLiked ? 'error' : 'default'}
-              >
-                {isLiked ? (
-                  <Favorite fontSize="small" />
-                ) : (
-                  <FavoriteBorder fontSize="small" />
-                )}
-              </IconButton>
+        {/* ── STATS ROW ── */}
+        {((snippet.like_count ?? 0) > 0 || (snippet.reviews?.length ?? 0) > 0) && (
+          <Box sx={{ px: '20px', pb: '6px', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            {(snippet.like_count ?? 0) > 0 && (
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <Box sx={{ width: 16, height: 16, borderRadius: '50%', bgcolor: '#e0245e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Favorite sx={{ fontSize: '0.55rem', color: '#fff' }} />
+                </Box>
+                <Typography fontSize="0.8rem" color="text.secondary">{snippet.like_count}</Typography>
+              </Stack>
+            )}
+            {(snippet.like_count ?? 0) > 0 && (snippet.reviews?.length ?? 0) > 0 && (
+              <Typography fontSize="0.8rem" color="text.secondary">·</Typography>
+            )}
+            {(snippet.reviews?.length ?? 0) > 0 && (
               <Typography
-                variant="caption"
-                fontWeight={700}
+                fontSize="0.8rem"
+                color="text.secondary"
+                sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                onClick={() => setExpanded(!expanded)}
               >
-                {snippet.like_count}
+                {snippet.reviews!.length} avis
               </Typography>
-            </Box>
+            )}
+          </Box>
+        )}
 
-            <Button
-              size="small"
-              startIcon={<ChatBubbleOutline />}
-              onClick={() => setExpanded(!expanded)}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 700,
-                color: expanded
-                  ? 'primary.main'
-                  : 'text.secondary',
-              }}
-            >
-              Reviews ({snippet.reviews?.length ?? 0})
-            </Button>
-          </Stack>
-        </CardActions>
+        {/* ── DIVIDER ── */}
+        <Box sx={{ mx: '20px', borderTop: '1px solid #e8e8e8' }} />
 
-        <Collapse
-          in={expanded}
-          timeout="auto"
-          unmountOnExit
-        >
-          <Divider />
-          <Box p={2}>
-            {!isOwner && user ? (
-              <>
-                <Typography
-                  variant="subtitle2"
-                  fontWeight={800}
-                  mb={1}
+        {/* ── ACTION BUTTONS ── */}
+        <Box sx={{ px: 1, py: 0.5, display: 'flex' }}>
+          <Button
+            onClick={handleLike}
+            startIcon={isLiked ? <Favorite sx={{ color: '#e0245e' }} /> : <FavoriteBorder />}
+            sx={{
+              flex: 1,
+              color: isLiked ? '#e0245e' : '#666',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              textTransform: 'none',
+              borderRadius: '6px',
+              py: 0.75,
+              '&:hover': { bgcolor: '#f5f5f5' },
+            }}
+          >
+            {isLiked ? 'Aimé' : "J'aime"}
+          </Button>
+
+          <Button
+            onClick={() => setExpanded(!expanded)}
+            startIcon={<ChatBubbleOutline />}
+            endIcon={expanded ? <ExpandLess sx={{ fontSize: '1rem' }} /> : <ExpandMore sx={{ fontSize: '1rem' }} />}
+            sx={{
+              flex: 1,
+              color: '#666',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              textTransform: 'none',
+              borderRadius: '6px',
+              py: 0.75,
+              '&:hover': { bgcolor: '#f5f5f5' },
+            }}
+          >
+            Avis
+          </Button>
+        </Box>
+
+        {/* ── REVIEWS SECTION ── */}
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <Box sx={{ bgcolor: '#fafafa', borderTop: '1px solid #e8e8e8', px: '20px', pt: 2, pb: 2.5 }}>
+
+            {!isOwner && user && (
+              <Stack direction="row" spacing={1.5} mb={2.5} alignItems="flex-start">
+                <Avatar
+                  src={user.avatar_url ?? undefined}
+                  sx={{ width: 38, height: 38, fontSize: '0.9rem', fontWeight: 700, bgcolor: '#e3f2fd', color: '#1565c0', flexShrink: 0 }}
                 >
-                  Laisser une review
-                </Typography>
-                <Stack spacing={2} mb={3}>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={1}
-                  >
-                    <Typography variant="caption">
-                      Note :
-                    </Typography>
+                  {user.username?.[0]?.toUpperCase()}
+                </Avatar>
+                <Box flex={1}>
+                  <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Typography fontSize="0.78rem" color="text.secondary">Note :</Typography>
                     <Rating
                       value={rating}
                       onChange={(_, v) => setRating(v)}
                       size="small"
+                      sx={{ '& .MuiRating-iconFilled': { color: '#f4a821' } }}
                     />
                   </Box>
                   <TextField
                     fullWidth
-                    placeholder="Votre avis sur ce code..."
+                    placeholder="Partagez votre avis sur ce snippet..."
                     multiline
-                    rows={2}
+                    minRows={2}
                     value={reviewText}
-                    onChange={(e) =>
-                      setReviewText(e.target.value)
-                    }
+                    onChange={(e) => setReviewText(e.target.value)}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '8px',
+                        bgcolor: '#fff',
+                        fontSize: '0.875rem',
+                        '& fieldset': { borderColor: '#e0e0e0' },
+                        '&:hover fieldset': { borderColor: '#bdbdbd' },
+                        '&.Mui-focused fieldset': { borderColor: '#0a66c2' },
+                      },
+                    }}
                     InputProps={{
                       endAdornment: (
-                        <InputAdornment position="end">
+                        <InputAdornment position="end" sx={{ alignSelf: 'flex-end', mb: 0.5 }}>
                           <IconButton
                             onClick={handleSubmitReview}
                             disabled={!reviewText.trim()}
-                            color="primary"
+                            sx={{ color: reviewText.trim() ? '#0a66c2' : '#ccc', '&:hover': { bgcolor: '#e8f0fc' } }}
                           >
                             <Send fontSize="small" />
                           </IconButton>
@@ -433,139 +404,80 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({
                       ),
                     }}
                   />
-                </Stack>
-              </>
-            ) : isOwner ? (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  display: 'block',
-                  mb: 2,
-                  fontStyle: 'italic',
-                }}
-              >
-                Vous ne pouvez pas évaluer votre propre
-                snippet.
-              </Typography>
-            ) : null}
+                </Box>
+              </Stack>
+            )}
 
-            <Stack spacing={2}>
-              {snippet.reviews &&
-              snippet.reviews.length > 0 ? (
+            {isOwner && (
+              <Typography fontSize="0.8rem" color="text.secondary" sx={{ fontStyle: 'italic', mb: 2 }}>
+                Vous ne pouvez pas évaluer votre propre snippet.
+              </Typography>
+            )}
+
+            <Stack spacing={1.5}>
+              {snippet.reviews && snippet.reviews.length > 0 ? (
                 snippet.reviews.map((rev) => (
-                  <Box
-                    key={rev.id}
-                    sx={{ display: 'flex', gap: 2 }}
-                  >
+                  <Stack key={rev.id} direction="row" spacing={1.25} alignItems="flex-start">
                     <Avatar
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() =>
-                        goToProfile(rev.reviewer.id)
-                      }
+                      onClick={() => goToProfile(rev.reviewer.id)}
+                      sx={{ width: 36, height: 36, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', bgcolor: '#f0f0f0', color: '#555', flexShrink: 0 }}
                     >
                       {rev.reviewer.username[0].toUpperCase()}
                     </Avatar>
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                      >
+                    <Box sx={{ flex: 1, bgcolor: '#fff', border: '1px solid #e8e8e8', borderRadius: '8px', px: 1.75, py: 1.25 }}>
+                      <Stack direction="row" spacing={1} alignItems="center" mb={0.4}>
                         <Typography
-                          variant="caption"
-                          fontWeight={800}
-                          sx={{
-                            cursor: 'pointer',
-                            '&:hover': {
-                              textDecoration: 'underline',
-                            },
-                          }}
-                          onClick={() =>
-                            goToProfile(rev.reviewer.id)
-                          }
+                          fontSize="0.82rem"
+                          fontWeight={700}
+                          color="#1a1a1a"
+                          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                          onClick={() => goToProfile(rev.reviewer.id)}
                         >
                           {rev.reviewer.username}
                         </Typography>
-                        <Rating
-                          value={rev.rating}
-                          readOnly
-                          size="small"
-                          sx={{ fontSize: '0.75rem' }}
-                        />
+                        <Rating value={rev.rating} readOnly size="small" sx={{ fontSize: '0.72rem', '& .MuiRating-iconFilled': { color: '#f4a821' } }} />
                       </Stack>
-                      <Typography
-                        variant="body2"
-                        sx={{ fontSize: '0.8rem', mt: 0.5 }}
-                      >
+                      <Typography fontSize="0.85rem" color="#444" lineHeight={1.55}>
                         {rev.comment}
                       </Typography>
                     </Box>
-                  </Box>
+                  </Stack>
                 ))
               ) : (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Aucune review pour le moment.
+                <Typography fontSize="0.85rem" color="text.secondary" textAlign="center" py={1.5}>
+                  {isOwner ? 'Aucun avis pour le moment.' : 'Aucun avis pour le moment. Soyez le premier !'}
                 </Typography>
               )}
             </Stack>
           </Box>
         </Collapse>
-      </Card>
+      </Box>
 
+      {/* ── MODALS ── */}
       {isOwner && isEditModalOpen && (
-        <EditSnippetModal
-          key={`edit-${snippet.id}`}
-          open={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          snippet={snippet}
-        />
+        <EditSnippetModal key={`edit-${snippet.id}`} open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} snippet={snippet} />
       )}
 
       <Dialog
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        PaperProps={{ sx: { borderRadius: '12px', p: 0.5, maxWidth: 420 } }}
       >
-        <DialogTitle
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            fontWeight: 800,
-          }}
-        >
-          <WarningAmberRounded color="error" /> Confirmer la
-          suppression
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.25, fontWeight: 700, fontSize: '1.05rem', color: '#1a1a1a' }}>
+          <WarningAmberRounded sx={{ color: '#f44336' }} fontSize="small" />
+          Confirmer la suppression
         </DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Êtes-vous sûr de vouloir supprimer le snippet{' '}
-            <strong>"{snippet.title}"</strong> ? Cette
-            action est irréversible.
+          <DialogContentText sx={{ fontSize: '0.9rem', color: '#555', lineHeight: 1.65 }}>
+            Êtes-vous sûr de vouloir supprimer <strong>"{snippet.title}"</strong> ? Cette action est irréversible.
           </DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button
-            onClick={() => setIsDeleteModalOpen(false)}
-            color="inherit"
-          >
+        <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
+          <Button onClick={() => setIsDeleteModalOpen(false)} sx={{ fontWeight: 600, color: '#555', textTransform: 'none', borderRadius: '8px', '&:hover': { bgcolor: '#f5f5f5' } }}>
             Annuler
           </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-          >
-            Supprimer définitivement
+          <Button onClick={handleConfirmDelete} variant="contained" color="error" disableElevation sx={{ fontWeight: 600, textTransform: 'none', borderRadius: '8px' }}>
+            Supprimer
           </Button>
         </DialogActions>
       </Dialog>

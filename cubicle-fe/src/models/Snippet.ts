@@ -1,6 +1,7 @@
 import type { Review } from './Review'
 import type { Topic } from './Topic'
 import type { User } from './User'
+import type { SnippetImage } from './SnippetImage.ts'
 
 export interface Snippet {
   id: number
@@ -16,4 +17,5 @@ export interface Snippet {
   is_public: boolean
   likes: User[]
   reviews: Review[]
+  images: SnippetImage[]
 }

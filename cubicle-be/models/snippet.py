@@ -21,6 +21,7 @@ class Snippet(db.Model):
     reviews = db.relationship('Review', back_populates='snippet', cascade="all, delete-orphan")
     liked_by = db.relationship('User', secondary='user_likes_snippet', back_populates='liked_snippets')
     topic = db.relationship('Topic', back_populates='snippets')
+    images = db.relationship('SnippetImage', back_populates='snippet', cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -35,5 +36,6 @@ class Snippet(db.Model):
             "author": self.author.to_dict() if self.author else None,
             "topic": self.topic.to_dict() if self.topic else None,
             "reviews": [review.to_dict() for review in self.reviews] if self.reviews else [],
-            "likes": [user.to_dict() for user in self.liked_by] if self.liked_by else []
+            "likes": [user.to_dict() for user in self.liked_by] if self.liked_by else [],
+            "images": [image.to_dict() for image in self.images] if self.images else []
         }

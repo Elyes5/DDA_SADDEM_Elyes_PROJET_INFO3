@@ -14,7 +14,10 @@ import {
   Box,
   CircularProgress,
   Alert,
+  IconButton,
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import PhotoCamera from '@mui/icons-material/PhotoCamera'
 import {
   useAppDispatch,
   useAppSelector,
@@ -25,6 +28,12 @@ import {
 } from '../state/slices/snippetSlice'
 import CodeEditor from './CodeEditor'
 import { type CreateSnippetRequest } from '../interfaces/SnippetContrat'
+
+// Nouvelle interface pour lier le fichier physique à son URL d'aperçu
+interface ImageItem {
+  file: File
+  previewUrl: string
+}
 
 interface CreateSnippetModalProps {
   open: boolean
@@ -50,11 +59,30 @@ export const CreateSnippetModal: React.FC<
     is_public: true,
   })
 
+  // Un seul state pour gérer les fichiers et leurs aperçus
+  const [images, setImages] = useState<ImageItem[]>([])
+
   useEffect(() => {
     if (!open) {
       dispatch(clearSnippetError())
     }
   }, [open, dispatch])
+
+  const handleCloseModal = () => {
+    // Nettoyer les URLs pour éviter les fuites de mémoire
+    images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+
+    setFormData({
+      title: '',
+      description: '',
+      code_content: '',
+      language: 'Javascript',
+      topic_id: '',
+      is_public: true,
+    })
+    setImages([])
+    onClose()
+  }
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -78,6 +106,30 @@ export const CreateSnippetModal: React.FC<
     }))
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file), // Création de l'URL directement ici
+      }))
+
+      setImages((prev) => [...prev, ...selectedFiles])
+
+      // Réinitialiser la valeur de l'input pour permettre de resélectionner le même fichier si besoin
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => {
+      const newImages = [...prev]
+      // Libérer la mémoire de l'image supprimée
+      URL.revokeObjectURL(newImages[index].previewUrl)
+      newImages.splice(index, 1)
+      return newImages
+    })
+  }
+
   const handleSubmit = async () => {
     const topicIdNum = Number(formData.topic_id)
 
@@ -89,34 +141,34 @@ export const CreateSnippetModal: React.FC<
     )
       return
 
-    const payload: CreateSnippetRequest = {
-      title: formData.title,
-      description: formData.description,
-      code_content: formData.code_content,
-      language: formData.language,
-      is_public: formData.is_public,
-      topic_id: topicIdNum,
-    }
+    // Construction directe du FormData ici pour éviter que Redux ne supprime les objets File
+    const payloadData = new FormData()
+    payloadData.append('title', formData.title)
+    payloadData.append('description', formData.description)
+    payloadData.append('code_content', formData.code_content)
+    payloadData.append('language', formData.language)
+    payloadData.append('is_public', formData.is_public.toString())
+    payloadData.append('topic_id', topicIdNum.toString())
 
-    const result = await dispatch(createSnippet(payload))
+    images.forEach((img) => {
+      // img.file contient l'objet File réel
+      payloadData.append('images', img.file)
+    })
+
+    // On cast vers unknown puis vers CreateSnippetRequest pour satisfaire TypeScript et éviter l'erreur ESLint "any"
+    const result = await dispatch(
+      createSnippet(payloadData as unknown as CreateSnippetRequest)
+    )
 
     if (createSnippet.fulfilled.match(result)) {
-      setFormData({
-        title: '',
-        description: '',
-        code_content: '',
-        language: 'Javascript',
-        topic_id: '',
-        is_public: true,
-      })
-      onClose()
+      handleCloseModal()
     }
   }
 
   return (
     <Dialog
       open={open}
-      onClose={loading ? undefined : onClose}
+      onClose={loading ? undefined : handleCloseModal}
       fullWidth
       maxWidth="md"
     >
@@ -197,21 +249,93 @@ export const CreateSnippetModal: React.FC<
               onChange={handleChange}
               disabled={loading}
             >
-              <MenuItem value="Javascript">
-                Javascript
-              </MenuItem>
+              <MenuItem value="Javascript">Javascript</MenuItem>
               <MenuItem value="Python">Python</MenuItem>
-              <MenuItem value="Typescript">
-                Typescript
-              </MenuItem>
-              <MenuItem value="React JSX">
-                React JSX
-              </MenuItem>
+              <MenuItem value="Typescript">Typescript</MenuItem>
+              <MenuItem value="React JSX">React JSX</MenuItem>
               <MenuItem value="SQL">SQL</MenuItem>
               <MenuItem value="Java">Java</MenuItem>
               <MenuItem value="CSS">CSS</MenuItem>
             </TextField>
           </Stack>
+
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                mb: 1,
+                display: 'block',
+                fontWeight: 600,
+              }}
+            >
+              IMAGES (OPTIONNEL)
+            </Typography>
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<PhotoCamera />}
+              disabled={loading}
+              sx={{ mb: 2 }}
+            >
+              Ajouter des images
+              <input
+                type="file"
+                hidden
+                multiple
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+            </Button>
+
+            {/* Section des aperçus d'images */}
+            {images.length > 0 && (
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                {images.map((img, index) => (
+                  <Box
+                    key={img.previewUrl}
+                    sx={{
+                      position: 'relative',
+                      width: 100,
+                      height: 100,
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <img
+                      src={img.previewUrl}
+                      alt={`Preview ${index}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveImage(index)}
+                      disabled={loading}
+                      sx={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        color: 'white',
+                        padding: '4px',
+                        '&:hover': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Box>
 
           <Box>
             <Typography
@@ -248,7 +372,7 @@ export const CreateSnippetModal: React.FC<
 
       <DialogActions sx={{ p: 3 }}>
         <Button
-          onClick={onClose}
+          onClick={handleCloseModal}
           color="inherit"
           disabled={loading}
         >
