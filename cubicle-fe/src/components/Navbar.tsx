@@ -60,9 +60,10 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
     void navigate('/home')
   }
 
-  const handleLogout = () => {
-    void dispatch(logoutUser())
+  const handleLogout = async () => {
     handleCloseMenu()
+    await dispatch(logoutUser())
+    void navigate('/login')
   }
 
   if (!user) return null
@@ -184,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
           </MenuItem>
           <Divider />
           <MenuItem
-            onClick={handleLogout}
+            onClick={() => void handleLogout()}
             sx={{ color: 'error.main' }}
           >
             <ListItemIcon>
