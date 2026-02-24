@@ -19,6 +19,7 @@ import {
   Link,
   Stack,
   IconButton,
+  Backdrop,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import {
@@ -49,6 +50,9 @@ const Login: React.FC = () => {
   // Access auth state from Redux store
   const { loading, error, emailSent, currentEmail, user } =
     useAppSelector((state) => state.auth)
+
+  // Use isTransitioning to dictate whether we should show the backdrop or not (loading or not)
+  const isTransitioning = loading || !!user
 
   // Redirect to dashboard if user session is detected
   useEffect(() => {
@@ -131,11 +135,36 @@ const Login: React.FC = () => {
               '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
             textAlign: 'center',
             position: 'relative',
+            overflow: 'hidden', // Backdrop remains in its initial container. It doesn't get out.
           }}
         >
+          {/* --- Backdrop (also seen as Loader) --- */}
+          <Backdrop
+            open={isTransitioning}
+            sx={{
+              position: 'absolute',
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(3px)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            <CircularProgress color="primary" />
+            <Typography variant="body2" fontWeight={700} color="primary">
+              {user
+                ? 'Connexion réussie...'
+                : !emailSent
+                  ? 'Envoi du code...'
+                  : 'Vérification en cours...'}
+            </Typography>
+          </Backdrop>
+
           {emailSent && (
             <IconButton
               onClick={handleBack}
+              disabled={isTransitioning}
               sx={{
                 position: 'absolute',
                 left: 20,
@@ -216,6 +245,7 @@ const Login: React.FC = () => {
                     onChange={(e) =>
                       setEmail(e.target.value)
                     }
+                    disabled={isTransitioning}
                     sx={modernInputStyle}
                   />
                 ) : (
@@ -229,8 +259,9 @@ const Login: React.FC = () => {
                     onChange={(e) =>
                       setPasscode(e.target.value)
                     }
+                    disabled={isTransitioning}
                     sx={modernInputStyle}
-                    inputProps={{ maxLength: 6 }} // Limit input to 6 digits for OTP
+                    slotProps={{ htmlInput: { maxLength: 6 } }}
                   />
                 )}
               </Box>
@@ -239,7 +270,7 @@ const Login: React.FC = () => {
                 type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+                disabled={isTransitioning || (!emailSent && !email) || (emailSent && !passcode)}
                 sx={{
                   py: 1.8,
                   mt: 1,
@@ -259,16 +290,7 @@ const Login: React.FC = () => {
                   },
                 }}
               >
-                {loading ? (
-                  <CircularProgress
-                    size={24}
-                    color="inherit"
-                  />
-                ) : !emailSent ? (
-                  'Continuer'
-                ) : (
-                  'Vérifier le code'
-                )}
+                {!emailSent ? 'Continuer' : 'Vérifier le code'}
               </Button>
             </Stack>
 
