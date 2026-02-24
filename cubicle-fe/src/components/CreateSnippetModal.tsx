@@ -15,6 +15,7 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  Backdrop,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import PhotoCamera from '@mui/icons-material/PhotoCamera'
@@ -29,7 +30,6 @@ import {
 import CodeEditor from './CodeEditor'
 import { type CreateSnippetRequest } from '../interfaces/SnippetContrat'
 
-// Nouvelle interface pour lier le fichier physique à son URL d'aperçu
 interface ImageItem {
   file: File
   previewUrl: string
@@ -59,7 +59,6 @@ export const CreateSnippetModal: React.FC<
     is_public: true,
   })
 
-  // Un seul state pour gérer les fichiers et leurs aperçus
   const [images, setImages] = useState<ImageItem[]>([])
 
   useEffect(() => {
@@ -69,7 +68,6 @@ export const CreateSnippetModal: React.FC<
   }, [open, dispatch])
 
   const handleCloseModal = () => {
-    // Nettoyer les URLs pour éviter les fuites de mémoire
     images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
 
     setFormData({
@@ -110,12 +108,10 @@ export const CreateSnippetModal: React.FC<
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files).map((file) => ({
         file,
-        previewUrl: URL.createObjectURL(file), // Création de l'URL directement ici
+        previewUrl: URL.createObjectURL(file),
       }))
 
       setImages((prev) => [...prev, ...selectedFiles])
-
-      // Réinitialiser la valeur de l'input pour permettre de resélectionner le même fichier si besoin
       e.target.value = ''
     }
   }
@@ -123,7 +119,6 @@ export const CreateSnippetModal: React.FC<
   const handleRemoveImage = (index: number) => {
     setImages((prev) => {
       const newImages = [...prev]
-      // Libérer la mémoire de l'image supprimée
       URL.revokeObjectURL(newImages[index].previewUrl)
       newImages.splice(index, 1)
       return newImages
@@ -141,7 +136,6 @@ export const CreateSnippetModal: React.FC<
     )
       return
 
-    // Construction directe du FormData ici pour éviter que Redux ne supprime les objets File
     const payloadData = new FormData()
     payloadData.append('title', formData.title)
     payloadData.append('description', formData.description)
@@ -151,11 +145,9 @@ export const CreateSnippetModal: React.FC<
     payloadData.append('topic_id', topicIdNum.toString())
 
     images.forEach((img) => {
-      // img.file contient l'objet File réel
       payloadData.append('images', img.file)
     })
 
-    // On cast vers unknown puis vers CreateSnippetRequest pour satisfaire TypeScript et éviter l'erreur ESLint "any"
     const result = await dispatch(
       createSnippet(payloadData as unknown as CreateSnippetRequest)
     )
@@ -171,7 +163,34 @@ export const CreateSnippetModal: React.FC<
       onClose={loading ? undefined : handleCloseModal}
       fullWidth
       maxWidth="md"
+      slotProps={{
+        paper: {
+          sx: {
+            position: 'relative',
+            overflow: 'hidden',
+          },
+        },
+      }}
     >
+      {/* Overlay for making the loader */}
+      <Backdrop
+        open={loading}
+        sx={{
+          position: 'absolute', // Make it cover the entire dialog
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(2px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress color="primary" />
+        <Typography variant="body2" fontWeight={600} color="primary">
+          Publication en cours...
+        </Typography>
+      </Backdrop>
+
       <DialogTitle
         sx={{
           fontWeight: 700,
@@ -181,7 +200,6 @@ export const CreateSnippetModal: React.FC<
         }}
       >
         Créer un nouveau Snippet
-        {loading && <CircularProgress size={24} />}
       </DialogTitle>
 
       <DialogContent dividers>
@@ -288,7 +306,6 @@ export const CreateSnippetModal: React.FC<
               />
             </Button>
 
-            {/* Section des aperçus d'images */}
             {images.length > 0 && (
               <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
                 {images.map((img, index) => (
@@ -390,13 +407,8 @@ export const CreateSnippetModal: React.FC<
             !formData.topic_id ||
             !formData.code_content
           }
-          startIcon={
-            loading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : null
-          }
         >
-          {loading ? 'Publication...' : 'Publier'}
+          Publier
         </Button>
       </DialogActions>
     </Dialog>

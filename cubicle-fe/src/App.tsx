@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   BrowserRouter as Router,
   Routes,
@@ -28,18 +28,20 @@ import { theme } from './theme/theme'
 
 function App() {
   const dispatch = useAppDispatch()
-  const { loading, user } = useAppSelector(
-    (state) => state.auth,
-  )
+  const { user } = useAppSelector((state) => state.auth)
+
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   useEffect(() => {
-    void dispatch(checkAuth())
+    void dispatch(checkAuth()).finally(() => {
+      setIsInitialLoad(false)
+    })
   }, [dispatch])
 
   return (
     <ThemeProvider theme={theme}>
       <Router>
-        {loading ? (
+        {isInitialLoad ? (
           <Box
             sx={{
               display: 'flex',
