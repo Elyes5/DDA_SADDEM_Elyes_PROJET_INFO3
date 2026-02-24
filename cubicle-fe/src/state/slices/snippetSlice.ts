@@ -297,6 +297,10 @@ const snippetSlice = createSlice({
       })
 
       .addCase(toggleLikeSnippet.rejected, (state, action) => {
+        if (action.meta.aborted) {
+          return
+        }
+
         const { id, isLike, currentUser } = action.meta.arg;
         const snippet = state.snippets.find((s) => s.id === id);
 

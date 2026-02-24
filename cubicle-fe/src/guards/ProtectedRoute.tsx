@@ -15,25 +15,13 @@ export const ProtectedRoute = () => {
     void dispatch(fetchTopics())
   }, [dispatch])
 
-  const { user, loading } = useAppSelector(
-    (state) => state.auth,
-  )
+  const { user } = useAppSelector((state) => state.auth)
 
-  if (loading && !user) return null
-
-  return user ? (
-    <Outlet />
-  ) : (
-    <Navigate to="/login" replace />
-  )
+  return user ? <Outlet /> : <Navigate to="/login" replace />
 }
 
 export const PublicRoute = () => {
-  const { user, loading } = useAppSelector(
-    (state) => state.auth,
-  )
-
-  if (loading && !user) return null
+  const { user } = useAppSelector((state) => state.auth)
 
   return user ? <Navigate to="/home" replace /> : <Outlet />
 }

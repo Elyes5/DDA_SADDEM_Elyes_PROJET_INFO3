@@ -23,6 +23,7 @@ import {
   Stack,
   Link,
   Grid,
+  Backdrop,
 } from '@mui/material'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import {
@@ -55,12 +56,16 @@ const Signup: React.FC = () => {
   >(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [isSuccess, setIsSuccess] = useState(false)
+
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { loading, error } = useAppSelector(
     (state) => state.auth,
   )
   const theme = useTheme()
+
+  const isTransitioning = loading || isSuccess
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement>,
@@ -101,6 +106,7 @@ const Signup: React.FC = () => {
     const resultAction = await dispatch(registerUser(data))
 
     if (registerUser.fulfilled.match(resultAction)) {
+      setIsSuccess(true)
       void navigate('/login')
     }
   }
@@ -153,8 +159,29 @@ const Signup: React.FC = () => {
             boxShadow:
               '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
             textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden', // Hidden for the backdrop behaviour
           }}
         >
+          {/* --- Backdrop also seen as a loader like the one in the login page --- */}
+          <Backdrop
+            open={isTransitioning}
+            sx={{
+              position: 'absolute',
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(3px)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            <CircularProgress color="primary" />
+            <Typography variant="body2" fontWeight={700} color="primary">
+              {isSuccess ? 'Inscription réussie...' : 'Création du compte...'}
+            </Typography>
+          </Backdrop>
+
           <Stack
             alignItems="center"
             spacing={2}
@@ -178,6 +205,7 @@ const Signup: React.FC = () => {
               variant="outlined"
               startIcon={<CloudUploadIcon />}
               onClick={() => fileInputRef.current?.click()}
+              disabled={isTransitioning}
               sx={{
                 borderRadius: '20px',
                 textTransform: 'none',
@@ -241,6 +269,7 @@ const Signup: React.FC = () => {
                       placeholder="Jean"
                       value={formData.first_name}
                       onChange={handleChange}
+                      disabled={isTransitioning}
                       sx={modernInputStyle}
                       required
                     />
@@ -257,6 +286,7 @@ const Signup: React.FC = () => {
                       placeholder="Dupont"
                       value={formData.last_name}
                       onChange={handleChange}
+                      disabled={isTransitioning}
                       sx={modernInputStyle}
                       required
                     />
@@ -276,6 +306,7 @@ const Signup: React.FC = () => {
                       placeholder="jdupont"
                       value={formData.username}
                       onChange={handleChange}
+                      disabled={isTransitioning}
                       sx={modernInputStyle}
                       required
                     />
@@ -293,6 +324,7 @@ const Signup: React.FC = () => {
                       placeholder="jean@mail.com"
                       value={formData.email}
                       onChange={handleChange}
+                      disabled={isTransitioning}
                       sx={modernInputStyle}
                       required
                     />
@@ -310,6 +342,7 @@ const Signup: React.FC = () => {
                   placeholder="+33 6..."
                   value={formData.phone_number}
                   onChange={handleChange}
+                  disabled={isTransitioning}
                   sx={modernInputStyle}
                 />
               </Box>
@@ -318,7 +351,7 @@ const Signup: React.FC = () => {
                 type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+                disabled={isTransitioning || !formData.first_name || !formData.last_name || !formData.username || !formData.email}
                 sx={{
                   py: 1.8,
                   mt: 2,
@@ -336,14 +369,7 @@ const Signup: React.FC = () => {
                   },
                 }}
               >
-                {loading ? (
-                  <CircularProgress
-                    size={24}
-                    color="inherit"
-                  />
-                ) : (
-                  "S'inscrire sur Cubicle"
-                )}
+                S'inscrire sur Cubicle
               </Button>
             </Stack>
 

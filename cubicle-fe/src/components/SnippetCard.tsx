@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Avatar,
@@ -79,6 +79,9 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
   const [rating, setRating] = useState<number | null>(5)
   const [copied, setCopied] = useState(false)
 
+  // Référence pour annuler la requête de like précédente
+  const likeRequestRef = useRef<{ abort: () => void } | null>(null)
+
   const isLiked = snippet.likes?.some((u) => u.id === user?.id)
   const isOwner = user?.id === snippet.author.id
   const isFollowing = user?.following_ids?.includes(snippet.author.id) ?? false
@@ -96,8 +99,18 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
 
   const handleLike = () => {
     if (!user) return
-    void dispatch(toggleLikeSnippet({ id: snippet.id, isLike: !isLiked, currentUser: user }))
+
+    // Abort the last request if the user clicks like/unlike multiple times quickly
+    if (likeRequestRef.current) {
+      likeRequestRef.current.abort()
+    }
+
+    // Register the new request so we can abort it if the user clicks like/unlike again quickly
+    likeRequestRef.current = dispatch(
+      toggleLikeSnippet({ id: snippet.id, isLike: !isLiked, currentUser: user })
+    )
   }
+
   const handleConfirmDelete = () => {
     void dispatch(deleteSnippet(snippet.id))
     setIsDeleteModalOpen(false)
