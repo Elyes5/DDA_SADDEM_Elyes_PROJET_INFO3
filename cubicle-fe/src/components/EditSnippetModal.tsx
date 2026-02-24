@@ -15,6 +15,7 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  Backdrop,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import PhotoCamera from '@mui/icons-material/PhotoCamera'
@@ -29,6 +30,7 @@ import {
 import CodeEditor from './CodeEditor'
 import type { Snippet } from '../models/Snippet'
 import type { SnippetImage } from '../models/SnippetImage'
+
 interface ImageItem {
   file: File
   previewUrl: string
@@ -63,7 +65,6 @@ export const EditSnippetModal: React.FC<
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([])
   const [newImages, setNewImages] = useState<ImageItem[]>([])
 
-  // Pattern React pour synchroniser si la prop change (sans useEffect)
   const [prevSnippetId, setPrevSnippetId] = useState(snippet.id)
 
   if (snippet.id !== prevSnippetId) {
@@ -81,6 +82,7 @@ export const EditSnippetModal: React.FC<
     newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl))
     setNewImages([])
   }
+
   useEffect(() => {
     return () => {
       newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl))
@@ -90,7 +92,6 @@ export const EditSnippetModal: React.FC<
   const handleCloseModal = () => {
     newImages.forEach((img) => URL.revokeObjectURL(img.previewUrl))
 
-    // Réinitialisation explicite à la fermeture
     setNewImages([])
     setDeletedImageIds([])
     setExistingImages(snippet.images || [])
@@ -200,7 +201,33 @@ export const EditSnippetModal: React.FC<
       onClose={loading ? undefined : handleCloseModal}
       fullWidth
       maxWidth="md"
+      slotProps={{
+        paper: {
+          sx: {
+            position: 'relative',
+            overflow: 'hidden',
+          },
+        },
+      }}
     >
+      <Backdrop
+        open={loading}
+        sx={{
+          position: 'absolute',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(2px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress color="primary" />
+        <Typography variant="body2" fontWeight={600} color="primary">
+          Mise à jour en cours...
+        </Typography>
+      </Backdrop>
+
       <DialogTitle
         sx={{
           fontWeight: 700,
@@ -210,7 +237,6 @@ export const EditSnippetModal: React.FC<
         }}
       >
         Modifier le Snippet
-        {loading && <CircularProgress size={24} />}
       </DialogTitle>
 
       <DialogContent dividers>
@@ -324,7 +350,6 @@ export const EditSnippetModal: React.FC<
 
             {(existingImages.length > 0 || newImages.length > 0) && (
               <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                {/* Images Existantes */}
                 {existingImages.map((img) => (
                   <Box
                     key={`existing-${img.id}`}
@@ -368,7 +393,6 @@ export const EditSnippetModal: React.FC<
                   </Box>
                 ))}
 
-                {/* Nouvelles Images */}
                 {newImages.map((img, index) => (
                   <Box
                     key={img.previewUrl}
@@ -468,15 +492,8 @@ export const EditSnippetModal: React.FC<
             !formData.topic_id ||
             !formData.code_content
           }
-          startIcon={
-            loading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : null
-          }
         >
-          {loading
-            ? 'Enregistrement...'
-            : 'Enregistrer les modifications'}
+          Enregistrer
         </Button>
       </DialogActions>
     </Dialog>

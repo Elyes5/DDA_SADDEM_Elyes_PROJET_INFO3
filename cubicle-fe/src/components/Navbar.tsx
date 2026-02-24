@@ -124,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
               display: { xs: 'none', sm: 'block' },
             }}
           >
-            {user.first_name} {user.last_name}
+            {user.username}
           </Typography>
           <IconButton
             onClick={handleOpenMenu}

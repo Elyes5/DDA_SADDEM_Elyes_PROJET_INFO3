@@ -39,7 +39,7 @@ import { useAppSelector, useAppDispatch } from '../hooks/hooks'
 import { toggleLikeSnippet, deleteSnippet } from '../state/slices/snippetSlice'
 import { addOrUpdateReview } from '../state/slices/reviewSlice'
 import { followUser, unfollowUser } from '../state/slices/userSlice'
-import { EditSnippetModal } from '../components/EditSnippetModal'
+import { EditSnippetModal } from './EditSnippetModal.tsx'
 
 interface SnippetCardProps {
   snippet: Snippet
@@ -96,9 +96,8 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
 
   const handleLike = () => {
     if (!user) return
-    void dispatch(toggleLikeSnippet({ id: snippet.id, isLike: !isLiked }))
+    void dispatch(toggleLikeSnippet({ id: snippet.id, isLike: !isLiked, currentUser: user }))
   }
-
   const handleConfirmDelete = () => {
     void dispatch(deleteSnippet(snippet.id))
     setIsDeleteModalOpen(false)
@@ -106,9 +105,12 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
 
   const handleFollow = () => {
     if (!user || isOwner) return
-    isFollowing
-      ? void dispatch(unfollowUser(snippet.author.id))
-      : void dispatch(followUser(snippet.author.id))
+
+    if (isFollowing) {
+      void dispatch(unfollowUser(snippet.author.id))
+    } else {
+      void dispatch(followUser(snippet.author.id))
+    }
   }
 
   const handleSubmitReview = () => {
@@ -304,7 +306,7 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
                 sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
                 onClick={() => setExpanded(!expanded)}
               >
-                {snippet.reviews!.length} avis
+                {snippet.reviews?.length} avis
               </Typography>
             )}
           </Box>
@@ -390,18 +392,20 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
                         '&.Mui-focused fieldset': { borderColor: '#0a66c2' },
                       },
                     }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end" sx={{ alignSelf: 'flex-end', mb: 0.5 }}>
-                          <IconButton
-                            onClick={handleSubmitReview}
-                            disabled={!reviewText.trim()}
-                            sx={{ color: reviewText.trim() ? '#0a66c2' : '#ccc', '&:hover': { bgcolor: '#e8f0fc' } }}
-                          >
-                            <Send fontSize="small" />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <InputAdornment position="end" sx={{ alignSelf: 'flex-end', mb: 0.5 }}>
+                            <IconButton
+                              onClick={handleSubmitReview}
+                              disabled={!reviewText.trim()}
+                              sx={{ color: reviewText.trim() ? '#0a66c2' : '#ccc', '&:hover': { bgcolor: '#e8f0fc' } }}
+                            >
+                              <Send fontSize="small" />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }
                     }}
                   />
                 </Box>
@@ -461,7 +465,9 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
       <Dialog
         open={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        PaperProps={{ sx: { borderRadius: '12px', p: 0.5, maxWidth: 420 } }}
+        slotProps={{
+          paper: { sx: { borderRadius: '12px', p: 0.5, maxWidth: 420 } }
+        }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.25, fontWeight: 700, fontSize: '1.05rem', color: '#1a1a1a' }}>
           <WarningAmberRounded sx={{ color: '#f44336' }} fontSize="small" />

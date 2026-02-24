@@ -5,7 +5,6 @@ import {
   Typography,
   ThemeProvider,
   CssBaseline,
-  CircularProgress,
   Button,
   Paper,
   Stack,
@@ -21,44 +20,24 @@ import { Navbar } from '../components/Navbar'
 import { CreateSnippetModal } from '../components/CreateSnippetModal'
 import { CreateTopicModal } from '../components/CreateTopicModal'
 import { useAppSelector } from '../hooks/hooks'
-
+import { SnippetSkeleton } from '../components/SnippetSkeleton.tsx'
 const MainFeed: React.FC = () => {
-  const [selectedTopic, setSelectedTopic] =
-    useState<string>('All')
-  const [isSnippetModalOpen, setIsSnippetModalOpen] =
-    useState(false)
-  const [isTopicModalOpen, setIsTopicModalOpen] =
-    useState(false)
+  const [selectedTopic, setSelectedTopic] = useState<string>('All')
+  const [isSnippetModalOpen, setIsSnippetModalOpen] = useState(false)
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false)
 
   const { user } = useAppSelector((state) => state.auth)
-  const { snippets, loading: snippetsLoading } =
-    useAppSelector((state) => state.snippets)
-  const { topics, loading: topicsLoading } = useAppSelector(
-    (state) => state.topics,
-  )
+  const { snippets, loading: snippetsLoading } = useAppSelector((state) => state.snippets)
+  const { topics, loading: topicsLoading } = useAppSelector((state) => state.topics)
+
   const filteredSnippets =
     selectedTopic === 'All'
       ? snippets
       : snippets.filter(
-          (s) =>
-            s.topic.name.toLowerCase() ===
-            selectedTopic.toLowerCase(),
-        )
-
-  if (snippetsLoading || topicsLoading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          height: '100vh',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    )
-  }
+        (s) =>
+          s.topic.name.toLowerCase() ===
+          selectedTopic.toLowerCase(),
+      )
 
   return (
     <ThemeProvider theme={theme}>
@@ -73,6 +52,7 @@ const MainFeed: React.FC = () => {
           mt: '64px',
         }}
       >
+        {/* --- SIDEBAR --- */}
         <Box
           sx={{
             display: { xs: 'none', md: 'block' },
@@ -87,6 +67,7 @@ const MainFeed: React.FC = () => {
           />
         </Box>
 
+        {/* --- MAIN CONTENT --- */}
         <Box
           component="main"
           sx={{
@@ -104,8 +85,7 @@ const MainFeed: React.FC = () => {
               width: '100%',
             }}
           >
-            {/* FIXED: Use a 3-column grid so the title stays truly centered
-                and the buttons sit in their own column on the right */}
+            {/* Header */}
             <Box
               sx={{
                 mb: 6,
@@ -118,10 +98,8 @@ const MainFeed: React.FC = () => {
                 gap: 2,
               }}
             >
-              {/* Empty left spacer — only visible on lg+ to balance the buttons */}
               <Box sx={{ display: { xs: 'none', lg: 'block' } }} />
 
-              {/* Title — always centered */}
               <Typography
                 variant="h4"
                 sx={{
@@ -136,7 +114,6 @@ const MainFeed: React.FC = () => {
                 </span>
               </Typography>
 
-              {/* Buttons — sit in the right column on lg, below title on mobile */}
               <Stack
                 direction="row"
                 spacing={2}
@@ -172,80 +149,59 @@ const MainFeed: React.FC = () => {
               </Stack>
             </Box>
 
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-              }}
-            >
-              {filteredSnippets.length > 0 ? (
-                filteredSnippets.map((snip) => (
-                  <SnippetCard
-                    key={snip.id}
-                    snippet={snip}
-                  />
-                ))
-              ) : (
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    py: 10,
-                    px: 4,
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    borderRadius: 4,
-                    bgcolor: 'transparent',
-                    borderStyle: 'dashed',
-                    borderWidth: 2,
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Box
+            {(snippetsLoading || topicsLoading) && snippets.length === 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {[1, 2, 3].map((skeleton) => (
+                  <SnippetSkeleton key={skeleton} />
+                ))}
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {filteredSnippets.length > 0 ? (
+                  filteredSnippets.map((snip) => (
+                    <SnippetCard key={snip.id} snippet={snip} />
+                  ))
+                ) : (
+                  <Paper
+                    variant="outlined"
                     sx={{
-                      bgcolor: 'action.hover',
-                      p: 2,
-                      borderRadius: '50%',
-                      mb: 2,
+                      py: 10,
+                      px: 4,
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      borderRadius: 4,
+                      bgcolor: 'transparent',
+                      borderStyle: 'dashed',
+                      borderWidth: 2,
+                      borderColor: 'divider',
                     }}
                   >
-                    <PostAddIcon
-                      sx={{
-                        fontSize: 48,
-                        color: 'text.secondary',
-                      }}
-                    />
-                  </Box>
-                  <Typography
-                    variant="h6"
-                    fontWeight={700}
-                    gutterBottom
-                  >
-                    Aucun snippet trouvé
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 3, maxWidth: 300 }}
-                  >
-                    Il n'y a pas encore de contenu partagé
-                    pour le thème "{selectedTopic}".
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    onClick={() => setIsSnippetModalOpen(true)}
-                  >
-                    Partager un code
-                  </Button>
-                </Paper>
-              )}
-            </Box>
+                    <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: '50%', mb: 2 }}>
+                      <PostAddIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
+                    </Box>
+                    <Typography variant="h6" fontWeight={700} gutterBottom>
+                      Aucun snippet trouvé
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 300 }}>
+                      Il n'y a pas encore de contenu partagé pour le thème "{selectedTopic}".
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() => setIsSnippetModalOpen(true)}
+                    >
+                      Partager un code
+                    </Button>
+                  </Paper>
+                )}
+              </Box>
+            )}
           </Container>
         </Box>
 
+        {/* --- INFO PANEL --- */}
         <Box
           sx={{
             display: { xs: 'none', lg: 'block' },
@@ -257,6 +213,7 @@ const MainFeed: React.FC = () => {
         </Box>
       </Box>
 
+      {/* --- MODALS --- */}
       <CreateSnippetModal
         open={isSnippetModalOpen}
         onClose={() => setIsSnippetModalOpen(false)}

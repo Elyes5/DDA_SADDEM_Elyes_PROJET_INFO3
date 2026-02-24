@@ -15,7 +15,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  loading: true, // Note: you might want this to be false initially unless you immediately dispatch checkAuth
+  loading: true,
   error: null,
   emailSent: false,
   currentEmail: null,

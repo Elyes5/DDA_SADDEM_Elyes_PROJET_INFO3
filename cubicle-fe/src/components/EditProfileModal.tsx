@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -11,6 +11,8 @@ import {
   Avatar,
   IconButton,
   CircularProgress,
+  Backdrop,
+  Typography,
 } from '@mui/material'
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material'
 import {
@@ -31,27 +33,68 @@ export const EditProfileModal: React.FC<
 > = ({ open, onClose, user }) => {
   const dispatch = useAppDispatch()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
   const loading = useAppSelector(
     (state) => state.users.loading,
   )
+
   const [formData, setFormData] = useState({
-    first_name: user.first_name,
-    last_name: user.last_name,
+    first_name: user.first_name || '',
+    last_name: user.last_name || '',
     bio: user.bio || '',
     avatarFile: null as File | null,
     avatarPreview: user.avatar_url || '',
   })
+
+  const [prevUserId, setPrevUserId] = useState(user.id)
+
+  if (user.id !== prevUserId) {
+    setPrevUserId(user.id)
+    setFormData({
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
+      bio: user.bio || '',
+      avatarFile: null,
+      avatarPreview: user.avatar_url || '',
+    })
+  }
+
+  useEffect(() => {
+    return () => {
+      if (formData.avatarFile) {
+        URL.revokeObjectURL(formData.avatarPreview)
+      }
+    }
+  }, [formData.avatarFile, formData.avatarPreview])
+
+  const handleCloseModal = () => {
+    if (formData.avatarFile) {
+      URL.revokeObjectURL(formData.avatarPreview)
+    }
+    setFormData({
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
+      bio: user.bio || '',
+      avatarFile: null,
+      avatarPreview: user.avatar_url || '',
+    })
+    onClose()
+  }
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
+      if (formData.avatarFile) {
+        URL.revokeObjectURL(formData.avatarPreview)
+      }
       setFormData((prev) => ({
         ...prev,
         avatarFile: file,
         avatarPreview: URL.createObjectURL(file),
       }))
+      e.target.value = ''
     }
   }
 
@@ -68,7 +111,7 @@ export const EditProfileModal: React.FC<
     void dispatch(updateProfile(data))
       .unwrap()
       .then(() => {
-        onClose()
+        handleCloseModal()
       })
       .catch((err) => {
         console.error(
@@ -81,10 +124,37 @@ export const EditProfileModal: React.FC<
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={loading ? undefined : handleCloseModal}
       fullWidth
       maxWidth="xs"
+      slotProps={{
+        paper: {
+          sx: {
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 3,
+          },
+        },
+      }}
     >
+      <Backdrop
+        open={loading}
+        sx={{
+          position: 'absolute',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(2px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress color="primary" />
+        <Typography variant="body2" fontWeight={600} color="primary">
+          Mise à jour en cours...
+        </Typography>
+      </Backdrop>
+
       <DialogTitle sx={{ fontWeight: 800 }}>
         Modifier mon profil
       </DialogTitle>
@@ -102,13 +172,16 @@ export const EditProfileModal: React.FC<
                 height: 100,
                 border: '2px solid #E2E8F0',
                 boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                bgcolor: 'primary.main',
+                fontSize: '2.5rem',
               }}
             >
-              {user.username[0].toUpperCase()}
+              {user.username?.[0]?.toUpperCase()}
             </Avatar>
             <IconButton
               size="small"
               onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
               sx={{
                 position: 'absolute',
                 bottom: 0,
@@ -134,6 +207,7 @@ export const EditProfileModal: React.FC<
             label="Prénom"
             fullWidth
             value={formData.first_name}
+            disabled={loading}
             onChange={(e) =>
               setFormData({
                 ...formData,
@@ -146,6 +220,7 @@ export const EditProfileModal: React.FC<
             label="Nom"
             fullWidth
             value={formData.last_name}
+            disabled={loading}
             onChange={(e) =>
               setFormData({
                 ...formData,
@@ -161,6 +236,7 @@ export const EditProfileModal: React.FC<
             rows={3}
             placeholder="Parlez-nous de vous..."
             value={formData.bio}
+            disabled={loading}
             onChange={(e) =>
               setFormData({
                 ...formData,
@@ -173,7 +249,7 @@ export const EditProfileModal: React.FC<
 
       <DialogActions sx={{ p: 3 }}>
         <Button
-          onClick={onClose}
+          onClick={handleCloseModal}
           color="inherit"
           disabled={loading}
         >
@@ -182,14 +258,10 @@ export const EditProfileModal: React.FC<
         <Button
           variant="contained"
           onClick={handleSave}
-          disabled={loading}
+          disabled={loading || !formData.first_name || !formData.last_name}
           sx={{ fontWeight: 'bold', minWidth: 100 }}
         >
-          {loading ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            'Enregistrer'
-          )}
+          Enregistrer
         </Button>
       </DialogActions>
     </Dialog>

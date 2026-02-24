@@ -143,29 +143,22 @@ export const deleteSnippet = createAsyncThunk<
 })
 
 export const toggleLikeSnippet = createAsyncThunk<
-  { id: number; isLike: boolean; currentUser: User | null },
-  { id: number; isLike: boolean },
-  {
-    rejectValue: string
-    state: { auth: { user: User | null } }
-  }
+  { id: number; isLike: boolean; currentUser: User },
+  { id: number; isLike: boolean; currentUser: User },
+  { rejectValue: string }
 >(
   'snippets/toggleLike',
-  async ({ id, isLike }, { getState, rejectWithValue }) => {
+  async ({ id, isLike, currentUser }, { rejectWithValue }) => {
     try {
       if (isLike) {
         await snippetService.likeSnippet(id)
       } else {
         await snippetService.unlikeSnippet(id)
       }
-      const currentUser = getState().auth.user
       return { id, isLike, currentUser }
     } catch (err) {
       return rejectWithValue(
-        handleAxiosError(
-          err,
-          'Échec du traitement du like/unlike',
-        ),
+        handleAxiosError(err, 'Échec du traitement du like/unlike')
       )
     }
   },
@@ -288,47 +281,39 @@ const snippetSlice = createSlice({
       })
 
       // --- LIKE / UNLIKE ---
-      .addCase(toggleLikeSnippet.pending, (state) => {
-        state.error = null
-      })
-      .addCase(
-        toggleLikeSnippet.fulfilled,
-        (state, action) => {
-          const user = action.payload.currentUser
-          const applyLike = (s: Snippet) => {
-            if (action.payload.isLike) {
-              s.like_count = (s.like_count || 0) + 1
-              if (!s.likes) s.likes = []
-              if (user) s.likes.push(user)
-            } else {
-              s.like_count = Math.max(
-                0,
-                (s.like_count || 0) - 1,
-              )
-              if (user)
-                s.likes = s.likes?.filter(
-                  (u) => u.id !== user.id,
-                )
-            }
+      .addCase(toggleLikeSnippet.pending, (state, action) => {
+        const { id, isLike, currentUser } = action.meta.arg;
+        const snippet = state.snippets.find((s) => s.id === id);
+
+        if (snippet) {
+          if (isLike) {
+            snippet.like_count = (snippet.like_count || 0) + 1;
+            snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
+          } else {
+            snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
+            snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
           }
-          const target = state.snippets.find(
-            (s) => s.id === action.payload.id,
-          )
-          if (target) applyLike(target)
-          if (
-            state.currentSnippet?.id === action.payload.id
-          )
-            applyLike(state.currentSnippet)
-        },
-      )
-      .addCase(
-        toggleLikeSnippet.rejected,
-        (state, action) => {
-          state.error =
-            action.payload ??
-            'Erreur de synchronisation du like'
-        },
-      )
+        }
+      })
+
+      .addCase(toggleLikeSnippet.rejected, (state, action) => {
+        const { id, isLike, currentUser } = action.meta.arg;
+        const snippet = state.snippets.find((s) => s.id === id);
+
+        if (snippet) {
+          if (isLike) {
+            snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
+            snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
+          } else {
+            snippet.like_count = (snippet.like_count || 0) + 1;
+            snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
+          }
+        }
+      })
+
+      .addCase(toggleLikeSnippet.fulfilled, () => {
+        // Rien à faire ici car l'interface a déjà été mise à jour dans le "pending" !
+      })
 
       // --- REVIEWS ---
       .addCase(
