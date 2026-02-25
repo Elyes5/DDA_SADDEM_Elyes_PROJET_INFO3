@@ -20,6 +20,9 @@ interface SnippetState {
   snippets: Snippet[]
   currentSnippet: Snippet | null
   loading: boolean
+  loadingMore: boolean
+  hasMore: boolean
+  page: number
   error: string | null
 }
 
@@ -27,6 +30,9 @@ const initialState: SnippetState = {
   snippets: [],
   currentSnippet: null,
   loading: false,
+  loadingMore: false,
+  hasMore: true,
+  page: 1,
   error: null,
 }
 
@@ -47,12 +53,12 @@ const handleAxiosError = (
 // --- Thunks ---
 
 export const fetchPublicSnippets = createAsyncThunk<
-  Snippet[],
-  void,
+  { snippets: Snippet[], hasMore: boolean, total: number },
+  { page: number, limit: number, topic: string },
   { rejectValue: string }
->('snippets/fetchAll', async (_, { rejectWithValue }) => {
+>('snippets/fetchAll', async ({ page, limit, topic }, { rejectWithValue }) => {
   try {
-    return await snippetService.getPublicSnippets()
+    return await snippetService.getPublicSnippets(page, limit, topic)
   } catch (err) {
     return rejectWithValue(
       handleAxiosError(
@@ -179,25 +185,52 @@ const snippetSlice = createSlice({
     ) => {
       state.currentSnippet = action.payload
     },
+    resetSnippets: (state) => {
+      state.snippets = []
+      state.page = 1
+      state.hasMore = true
+      state.error = null
+      state.loading = false
+      state.loadingMore = false
+    }
   },
   extraReducers: (builder) => {
     builder
       // --- FETCH ALL ---
-      .addCase(fetchPublicSnippets.pending, (state) => {
-        state.loading = true
+      .addCase(fetchPublicSnippets.pending, (state, action) => {
+        if (action.meta.arg.page === 1) {
+          state.loading = true
+          state.snippets = [] // Clear if it's the first page specifically
+        } else {
+          state.loadingMore = true
+        }
         state.error = null
       })
       .addCase(
         fetchPublicSnippets.fulfilled,
         (state, action) => {
           state.loading = false
-          state.snippets = action.payload
+          state.loadingMore = false
+
+          if (action.meta.arg.page === 1) {
+            state.snippets = action.payload.snippets
+          } else {
+            // Only append if the snippet doesn't already exist to avoid dupes in StrictMode
+            const newSnippets = action.payload.snippets.filter(
+              (newSnip) => !state.snippets.find(s => s.id === newSnip.id)
+            )
+            state.snippets = [...state.snippets, ...newSnippets]
+          }
+
+          state.hasMore = action.payload.hasMore
+          state.page = action.meta.arg.page
         },
       )
       .addCase(
         fetchPublicSnippets.rejected,
         (state, action) => {
           state.loading = false
+          state.loadingMore = false
           state.error =
             action.payload ?? 'Une erreur est survenue'
         },
@@ -371,6 +404,6 @@ const snippetSlice = createSlice({
   },
 })
 
-export const { clearSnippetError, setCurrentSnippet } =
+export const { clearSnippetError, setCurrentSnippet, resetSnippets } =
   snippetSlice.actions
 export default snippetSlice.reducer

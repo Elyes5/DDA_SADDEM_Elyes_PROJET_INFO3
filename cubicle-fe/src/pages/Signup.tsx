@@ -153,7 +153,7 @@ const Signup: React.FC = () => {
           elevation={0}
           sx={{
             p: { xs: 3, sm: 5 },
-            borderRadius: 8,
+            borderRadius: 3,
             backgroundColor: 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(20px)',
             boxShadow:

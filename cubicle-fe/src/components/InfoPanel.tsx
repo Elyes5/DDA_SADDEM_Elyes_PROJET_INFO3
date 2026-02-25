@@ -81,7 +81,7 @@ export const InfoPanel: React.FC = () => {
           background:
             'linear-gradient(135deg, #3B49DF 0%, #663399 100%)',
           color: 'white',
-          borderRadius: 4,
+          borderRadius: 1,
           mb: 4,
           boxShadow: '0 4px 15px rgba(59, 73, 223, 0.3)',
         }}

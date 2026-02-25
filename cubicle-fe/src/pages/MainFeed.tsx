@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Container,
   Box,
@@ -8,6 +8,7 @@ import {
   Button,
   Paper,
   Stack,
+  CircularProgress,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import PostAddIcon from '@mui/icons-material/PostAdd'
@@ -19,25 +20,38 @@ import { InfoPanel } from '../components/InfoPanel'
 import { Navbar } from '../components/Navbar'
 import { CreateSnippetModal } from '../components/CreateSnippetModal'
 import { CreateTopicModal } from '../components/CreateTopicModal'
-import { useAppSelector } from '../hooks/hooks'
+import { useAppSelector, useAppDispatch } from '../hooks/hooks'
 import { SnippetSkeleton } from '../components/SnippetSkeleton.tsx'
+import { fetchPublicSnippets, resetSnippets } from '../state/slices/snippetSlice'
+
 const MainFeed: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>('All')
   const [isSnippetModalOpen, setIsSnippetModalOpen] = useState(false)
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false)
 
+  const dispatch = useAppDispatch()
   const { user } = useAppSelector((state) => state.auth)
-  const { snippets, loading: snippetsLoading } = useAppSelector((state) => state.snippets)
+  const { snippets, loading: snippetsLoading, loadingMore, hasMore, page } = useAppSelector((state) => state.snippets)
   const { topics, loading: topicsLoading } = useAppSelector((state) => state.topics)
 
-  const filteredSnippets =
-    selectedTopic === 'All'
-      ? snippets
-      : snippets.filter(
-        (s) =>
-          s.topic.name.toLowerCase() ===
-          selectedTopic.toLowerCase(),
-      )
+  useEffect(() => {
+    dispatch(resetSnippets())
+    void dispatch(fetchPublicSnippets({ page: 1, limit: 10, topic: selectedTopic }))
+  }, [selectedTopic, dispatch])
+
+  const observer = useRef<IntersectionObserver | null>(null)
+  const lastSnippetElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (snippetsLoading || loadingMore) return
+    if (observer.current) observer.current.disconnect()
+
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        void dispatch(fetchPublicSnippets({ page: page + 1, limit: 10, topic: selectedTopic }))
+      }
+    })
+
+    if (node) observer.current.observe(node)
+  }, [snippetsLoading, loadingMore, hasMore, page, selectedTopic, dispatch])
 
   return (
     <ThemeProvider theme={theme}>
@@ -157,10 +171,24 @@ const MainFeed: React.FC = () => {
               </Box>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {filteredSnippets.length > 0 ? (
-                  filteredSnippets.map((snip) => (
-                    <SnippetCard key={snip.id} snippet={snip} />
-                  ))
+                {snippets.length > 0 ? (
+                  <>
+                    {snippets.map((snip, index) => {
+                      if (snippets.length === index + 1) {
+                        return (
+                          <Box ref={lastSnippetElementRef} key={snip.id} sx={{ pb: 1 }}>
+                            <SnippetCard snippet={snip} />
+                          </Box>
+                        )
+                      }
+                      return <SnippetCard key={snip.id} snippet={snip} />
+                    })}
+                    {loadingMore && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                        <CircularProgress size={30} />
+                      </Box>
+                    )}
+                  </>
                 ) : (
                   <Paper
                     variant="outlined"

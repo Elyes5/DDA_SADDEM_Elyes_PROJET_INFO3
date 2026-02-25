@@ -281,15 +281,28 @@ class SnippetService:
             return None, str(e)
 
     @staticmethod
-    def get_all_public_snippets(user_id):
+    def get_all_public_snippets(user_id, page=1, limit=10, topic_name=None):
         try:
-            snippets = Snippet.query.filter(
+            query = Snippet.query.filter(
                 or_(
                     Snippet.is_public == True,
                     Snippet.author_id == user_id
                 )
-            ).order_by(Snippet.creation_date.desc()).all()
+            )
 
-            return [s.to_dict() for s in snippets], None
+            if topic_name and topic_name.lower() != 'all':
+                query = query.join(Topic).filter(Topic.name.ilike(topic_name))
+
+            query = query.order_by(Snippet.creation_date.desc(), Snippet.snippet_id.desc())
+
+            total_items = query.count()
+            
+            snippets = query.offset((page - 1) * limit).limit(limit).all()
+
+            return {
+                "snippets": [s.to_dict() for s in snippets],
+                "hasMore": (page * limit) < total_items,
+                "total": total_items
+            }, None
         except Exception as e:
             return None, str(e)

@@ -2,7 +2,7 @@ import React from 'react'
 import { Box, Skeleton } from '@mui/material'
 
 export const SnippetSkeleton: React.FC = () => (
-  <Box sx={{ bgcolor: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', mb: 3, overflow: 'hidden' }}>
+  <Box sx={{ bgcolor: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', mb: 3, overflow: 'hidden' }}>
     <Box sx={{ p: '16px 20px 12px', display: 'flex', alignItems: 'center' }}>
       <Skeleton variant="circular" width={46} height={46} sx={{ mr: 2 }} />
       <Box sx={{ flex: 1 }}>
