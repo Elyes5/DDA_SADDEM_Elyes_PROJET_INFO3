@@ -145,7 +145,7 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
         sx={{
           bgcolor: '#fff',
           border: '1px solid #e0e0e0',
-          borderRadius: '12px',
+          borderRadius: '8px',
           mb: 2,
           overflow: 'hidden',
         }}
@@ -249,13 +249,13 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
           {snippet.images && snippet.images.length > 0 && (
             <Box mb={2}>
               {snippet.images.length === 1 ? (
-                <Box sx={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e8e8e8', display: 'flex', justifyContent: 'center', bgcolor: '#fafafa' }}>
+                <Box sx={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #e8e8e8', display: 'flex', justifyContent: 'center', bgcolor: '#fafafa' }}>
                   <img src={snippet.images[0].url} alt="Attachment" style={{ maxWidth: '100%', maxHeight: 400, objectFit: 'contain', display: 'block' }} />
                 </Box>
               ) : (
                 <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { height: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#e0e0e0', borderRadius: 4 } }}>
                   {snippet.images.map((img) => (
-                    <Box key={img.id} sx={{ minWidth: 200, height: 150, borderRadius: '8px', overflow: 'hidden', flexShrink: 0, border: '1px solid #e8e8e8', bgcolor: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Box key={img.id} sx={{ minWidth: 200, height: 150, borderRadius: '4px', overflow: 'hidden', flexShrink: 0, border: '1px solid #e8e8e8', bgcolor: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <img src={img.url} alt={`Attachment ${img.id}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     </Box>
                   ))}
@@ -265,7 +265,7 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
           )}
 
           {/* Code block */}
-          <Box sx={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+          <Box sx={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
               <Stack direction="row" spacing={0.6} mr={1.5}>
                 {['#FF5F57', '#FEBC2E', '#28C840'].map((c, i) => (

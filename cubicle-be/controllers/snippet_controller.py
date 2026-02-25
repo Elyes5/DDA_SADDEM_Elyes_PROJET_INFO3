@@ -8,10 +8,14 @@ snippets_bp = Blueprint('snippets', __name__)
 @jwt_required()
 def get_public_snippets():
     current_user_id = get_jwt_identity()
-    snippets, error = SnippetService.get_all_public_snippets(current_user_id)
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 10, type=int)
+    topic = request.args.get('topic', 'All', type=str)
+    
+    result, error = SnippetService.get_all_public_snippets(current_user_id, page, limit, topic)
     if error:
         return jsonify({"error": "Failed to fetch snippets", "details": error}), 500
-    return jsonify(snippets), 200
+    return jsonify(result), 200
 
 @snippets_bp.route('/<int:snippet_id>', methods=['GET'])
 @jwt_required()

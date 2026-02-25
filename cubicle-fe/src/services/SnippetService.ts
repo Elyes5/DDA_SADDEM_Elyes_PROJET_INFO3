@@ -2,9 +2,9 @@ import api from '../api/api'
 import type { Snippet } from '../models/Snippet'
 
 export const snippetService = {
-  getPublicSnippets: async (): Promise<Snippet[]> => {
-    const { data } = await api.get<Snippet[]>(
-      '/api/snippets/',
+  getPublicSnippets: async (page = 1, limit = 10, topic = 'All'): Promise<{ snippets: Snippet[], hasMore: boolean, total: number }> => {
+    const { data } = await api.get<{ snippets: Snippet[], hasMore: boolean, total: number }>(
+      `/api/snippets/?page=${page}&limit=${limit}&topic=${encodeURIComponent(topic)}`,
     )
     return data
   },
