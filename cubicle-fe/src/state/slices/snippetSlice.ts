@@ -56,9 +56,9 @@ export const fetchPublicSnippets = createAsyncThunk<
   { snippets: Snippet[], hasMore: boolean, total: number },
   { page: number, limit: number, topic: string },
   { rejectValue: string }
->('snippets/fetchAll', async ({ page, limit, topic }, { rejectWithValue }) => {
+>('snippets/fetchAll', async ({ page, limit, topic }, { rejectWithValue, signal }) => {
   try {
-    return await snippetService.getPublicSnippets(page, limit, topic)
+    return await snippetService.getPublicSnippets(page, limit, topic, signal)
   } catch (err) {
     return rejectWithValue(
       handleAxiosError(
@@ -148,21 +148,24 @@ export const deleteSnippet = createAsyncThunk<
   }
 })
 
-export const toggleLikeSnippet = createAsyncThunk<
+export const syncLikeSnippet = createAsyncThunk<
   { id: number; isLike: boolean; currentUser: User },
   { id: number; isLike: boolean; currentUser: User },
   { rejectValue: string }
 >(
-  'snippets/toggleLike',
-  async ({ id, isLike, currentUser }, { rejectWithValue }) => {
+  'snippets/syncLike',
+  async ({ id, isLike, currentUser }, { rejectWithValue, signal }) => {
     try {
       if (isLike) {
-        await snippetService.likeSnippet(id)
+        await snippetService.likeSnippet(id, signal)
       } else {
-        await snippetService.unlikeSnippet(id)
+        await snippetService.unlikeSnippet(id, signal)
       }
       return { id, isLike, currentUser }
     } catch (err) {
+      if (axios.isCancel(err)) {
+        throw err;
+      }
       return rejectWithValue(
         handleAxiosError(err, 'Échec du traitement du like/unlike')
       )
@@ -192,6 +195,31 @@ const snippetSlice = createSlice({
       state.error = null
       state.loading = false
       state.loadingMore = false
+    },
+    optimisticToggleLike: (
+      state,
+      action: PayloadAction<{ id: number; isLike: boolean; currentUser: User }>
+    ) => {
+      const { id, isLike, currentUser } = action.payload;
+      const targetSnippetList = [
+        state.snippets.find((s) => s.id === id),
+        state.currentSnippet?.id === id ? state.currentSnippet : undefined
+      ].filter(Boolean) as Snippet[];
+
+      targetSnippetList.forEach(snippet => {
+        const userAlreadyAssigned = snippet.likes?.some(u => u.id === currentUser.id);
+        if (isLike) {
+          if (!userAlreadyAssigned) {
+            snippet.like_count = (snippet.like_count || 0) + 1;
+            snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
+          }
+        } else {
+          if (userAlreadyAssigned) {
+            snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
+            snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
+          }
+        }
+      });
     }
   },
   extraReducers: (builder) => {
@@ -313,43 +341,33 @@ const snippetSlice = createSlice({
           action.payload ?? 'Erreur lors de la suppression'
       })
 
-      // --- LIKE / UNLIKE ---
-      .addCase(toggleLikeSnippet.pending, (state, action) => {
-        const { id, isLike, currentUser } = action.meta.arg;
-        const snippet = state.snippets.find((s) => s.id === id);
-
-        if (snippet) {
-          if (isLike) {
-            snippet.like_count = (snippet.like_count || 0) + 1;
-            snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
-          } else {
-            snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
-            snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
-          }
-        }
-      })
-
-      .addCase(toggleLikeSnippet.rejected, (state, action) => {
-        if (action.meta.aborted) {
-          return
+      // --- SYNC LIKE / UNLIKE ---
+      .addCase(syncLikeSnippet.rejected, (state, action) => {
+        // Do not rollback if the request was intentionally aborted
+        if (action.meta.aborted || action.error.message === 'canceled' || action.error.name === 'AbortError') {
+          return;
         }
 
         const { id, isLike, currentUser } = action.meta.arg;
-        const snippet = state.snippets.find((s) => s.id === id);
+        const targetSnippetList = [
+          state.snippets.find((s) => s.id === id),
+          state.currentSnippet?.id === id ? state.currentSnippet : undefined
+        ].filter(Boolean) as Snippet[];
 
-        if (snippet) {
-          if (isLike) {
-            snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
-            snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
-          } else {
-            snippet.like_count = (snippet.like_count || 0) + 1;
-            snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
+        targetSnippetList.forEach(snippet => {
+          const userAlreadyAssigned = snippet.likes?.some(u => u.id === currentUser.id);
+          if (isLike) { // rolling back a like -> unlike
+            if (userAlreadyAssigned) {
+              snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
+              snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
+            }
+          } else { // rolling back an unlike -> like
+            if (!userAlreadyAssigned) {
+              snippet.like_count = (snippet.like_count || 0) + 1;
+              snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
+            }
           }
-        }
-      })
-
-      .addCase(toggleLikeSnippet.fulfilled, () => {
-        // Rien à faire ici car l'interface a déjà été mise à jour dans le "pending" !
+        });
       })
 
       // --- REVIEWS ---
@@ -404,6 +422,6 @@ const snippetSlice = createSlice({
   },
 })
 
-export const { clearSnippetError, setCurrentSnippet, resetSnippets } =
+export const { clearSnippetError, setCurrentSnippet, resetSnippets, optimisticToggleLike } =
   snippetSlice.actions
 export default snippetSlice.reducer
