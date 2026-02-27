@@ -36,7 +36,11 @@ const MainFeed: React.FC = () => {
 
   useEffect(() => {
     dispatch(resetSnippets())
-    void dispatch(fetchPublicSnippets({ page: 1, limit: 10, topic: selectedTopic }))
+    const promise = dispatch(fetchPublicSnippets({ page: 1, limit: 10, topic: selectedTopic }))
+
+    return () => {
+      promise.abort()
+    }
   }, [selectedTopic, dispatch])
 
   const observer = useRef<IntersectionObserver | null>(null)

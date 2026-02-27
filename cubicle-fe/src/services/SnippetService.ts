@@ -2,9 +2,15 @@ import api from '../api/api'
 import type { Snippet } from '../models/Snippet'
 
 export const snippetService = {
-  getPublicSnippets: async (page = 1, limit = 10, topic = 'All'): Promise<{ snippets: Snippet[], hasMore: boolean, total: number }> => {
+  getPublicSnippets: async (
+    page = 1,
+    limit = 10,
+    topic = 'All',
+    signal?: AbortSignal,
+  ): Promise<{ snippets: Snippet[], hasMore: boolean, total: number }> => {
     const { data } = await api.get<{ snippets: Snippet[], hasMore: boolean, total: number }>(
       `/api/snippets/?page=${page}&limit=${limit}&topic=${encodeURIComponent(topic)}`,
+      { signal }
     )
     return data
   },
@@ -68,18 +74,24 @@ export const snippetService = {
 
   likeSnippet: async (
     snippetId: number,
+    signal?: AbortSignal,
   ): Promise<{ message: string }> => {
     const { data } = await api.post<{ message: string }>(
       `/api/snippets/${snippetId}/like/`,
+      {},
+      { signal }
     )
     return data
   },
 
   unlikeSnippet: async (
     snippetId: number,
+    signal?: AbortSignal,
   ): Promise<{ message: string }> => {
     const { data } = await api.post<{ message: string }>(
       `/api/snippets/${snippetId}/unlike/`,
+      {},
+      { signal }
     )
     return data
   },

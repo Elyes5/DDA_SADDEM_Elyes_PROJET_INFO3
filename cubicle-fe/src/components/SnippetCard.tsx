@@ -36,7 +36,7 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import type { Snippet } from '../models/Snippet'
 import { useAppSelector, useAppDispatch } from '../hooks/hooks'
-import { toggleLikeSnippet, deleteSnippet } from '../state/slices/snippetSlice'
+import { syncLikeSnippet, optimisticToggleLike, deleteSnippet } from '../state/slices/snippetSlice'
 import { addOrUpdateReview } from '../state/slices/reviewSlice'
 import { followUser, unfollowUser } from '../state/slices/userSlice'
 import { EditSnippetModal } from './EditSnippetModal.tsx'
@@ -79,8 +79,9 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
   const [rating, setRating] = useState<number | null>(5)
   const [copied, setCopied] = useState(false)
 
-  // Référence pour annuler la requête de like précédente
-  const likeRequestRef = useRef<{ abort: () => void } | null>(null)
+  // Ref pour le debounce des likes et pour forcer la synchronisation avec le burst local
+  const likeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const syncBurstRef = useRef<{ isLiked: boolean } | null>(null)
 
   const isLiked = snippet.likes?.some((u) => u.id === user?.id)
   const isOwner = user?.id === snippet.author.id
@@ -100,15 +101,26 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
   const handleLike = () => {
     if (!user) return
 
-    // Abort the last request if the user clicks like/unlike multiple times quickly
-    if (likeRequestRef.current) {
-      likeRequestRef.current.abort()
+    // Evaluate the new state based on local burst intent, fallback to Redux state
+    const currentIsLiked = syncBurstRef.current !== null ? syncBurstRef.current.isLiked : isLiked
+    const newIsLiked = !currentIsLiked
+
+    // Update burst ref immediately 
+    syncBurstRef.current = { isLiked: newIsLiked }
+
+    // Instant optimistic update
+    dispatch(optimisticToggleLike({ id: snippet.id, isLike: newIsLiked, currentUser: user }))
+
+    // Debounce the actual API call
+    if (likeTimeoutRef.current) {
+      clearTimeout(likeTimeoutRef.current)
     }
 
-    // Register the new request so we can abort it if the user clicks like/unlike again quickly
-    likeRequestRef.current = dispatch(
-      toggleLikeSnippet({ id: snippet.id, isLike: !isLiked, currentUser: user })
-    )
+    likeTimeoutRef.current = setTimeout(() => {
+      // Sync complete, clear burst context
+      syncBurstRef.current = null
+      void dispatch(syncLikeSnippet({ id: snippet.id, isLike: newIsLiked, currentUser: user }))
+    }, 800)
   }
 
   const handleConfirmDelete = () => {
