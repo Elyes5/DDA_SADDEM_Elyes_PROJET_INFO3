@@ -81,7 +81,7 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
 
   // Ref pour le debounce des likes et pour forcer la synchronisation avec le burst local
   const likeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const syncBurstRef = useRef<{ isLiked: boolean } | null>(null)
+  const syncBurstRef = useRef<{ isLiked: boolean; originalIsLiked?: boolean } | null>(null)
 
   const isLiked = snippet.likes?.some((u) => u.id === user?.id)
   const isOwner = user?.id === snippet.author.id
@@ -102,12 +102,22 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
     if (!user) return
 
     // Evaluate the new state based on local burst intent, fallback to Redux state
-    const currentIsLiked = syncBurstRef.current !== null ? syncBurstRef.current.isLiked : isLiked
+    // We must use the current snapshot of syncBurstRef because React closures might have old `isLiked` values
+    // if the user clicks multiple times before the component fully re-renders.
+    const currentIsLiked = syncBurstRef.current !== null ? syncBurstRef.current.isLiked : Boolean(isLiked)
     const newIsLiked = !currentIsLiked
 
-    // Update burst ref immediately 
-    syncBurstRef.current = { isLiked: newIsLiked }
-
+    // Record the original server state BEFORE applying the very first click in the burst
+    if (syncBurstRef.current === null || syncBurstRef.current.originalIsLiked === undefined) {
+      syncBurstRef.current = {
+        isLiked: newIsLiked,
+        originalIsLiked: Boolean(isLiked)
+      };
+    } else {
+      // Just update the current intent
+      syncBurstRef.current.isLiked = newIsLiked;
+    }
+    console.log("Dispatching...");
     // Instant optimistic update
     dispatch(optimisticToggleLike({ id: snippet.id, isLike: newIsLiked, currentUser: user }))
 
@@ -117,9 +127,15 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
     }
 
     likeTimeoutRef.current = setTimeout(() => {
+      // Check if the final state after the burst is different from the original state
+      const shouldSync = syncBurstRef.current?.isLiked !== syncBurstRef.current?.originalIsLiked;
+
       // Sync complete, clear burst context
       syncBurstRef.current = null
-      void dispatch(syncLikeSnippet({ id: snippet.id, isLike: newIsLiked, currentUser: user }))
+
+      if (shouldSync) {
+        void dispatch(syncLikeSnippet({ id: snippet.id, isLike: newIsLiked, currentUser: user }))
+      }
     }, 800)
   }
 
