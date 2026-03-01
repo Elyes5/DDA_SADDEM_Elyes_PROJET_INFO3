@@ -32,43 +32,6 @@ L'application est déployée et accessible via les adresses suivantes :
 - **Backend (API Documentation/Endpoint)** : [http://api.cubicleapp.tech/](http://api.cubicleapp.tech/)
 
 ---
-Voici le README.md mis à jour, incluant la section avec le fichier .env.example ajoutée juste avant la section sur le développement local (et avec la numérotation ajustée en conséquence) :
-
-Markdown
-# 💻 Cubicle - Réseau Social de Partage de Snippets de Code
-
-[![GitHub](https://img.shields.io/github/last-commit/Elyes5/DDA_SADDEM_Elyes_PROJET_INFO3?color=green)](https://github.com/Elyes5/DDA_SADDEM_Elyes_PROJET_INFO3.git)
-
-## 1. Contexte du Projet
-
-Ce projet, **Cubicle**, est une application web dont l'objectif est de fournir une **API RESTful** pour un réseau social spécialisé dans le **partage et la revue de petits blocs de code (snippets)**.
-
-L'application vise à formaliser les échanges entre développeurs en permettant de poster des snippets, de les classer par **sujet d'expertise (topic)**, de les commenter (revues par les pairs), de **liker** et de suivre les autres contributeurs.
-
----
-
-## 2. Architecture Technique et Stack
-
-L'application est conçue selon une architecture modulaire et conteneurisée.
-
-- **Backend/API RESTful** : Développé en **Python/Flask**.
-- **Frontend** : **React** avec **Vite** (TypeScript).
-- **Base de Données** : **MySQL** (relationnelle).
-- **ORM** : Utilisation d'**SQLAlchemy** via **Flask-SQLAlchemy**.
-- **Conteneurisation & Orchestration** : **Docker**, **Kubernetes (K8s)** sur **Infomaniak**.
-- **Hébergement Frontend** : **Netlify**.
-- **Hébergement Backend** : **Infomaniak**.
-
----
-
-## 3. Accès en Production
-
-L'application est déployée et accessible via les adresses suivantes :
-
-- **Frontend (Application Web)** : [https://cubicleapp.tech/](https://cubicleapp.tech/)
-- **Backend (API Documentation/Endpoint)** : [http://api.cubicleapp.tech/](http://api.cubicleapp.tech/)
-
----
 
 ## 4. Configuration des Variables d'Environnement (.env.example)
 
