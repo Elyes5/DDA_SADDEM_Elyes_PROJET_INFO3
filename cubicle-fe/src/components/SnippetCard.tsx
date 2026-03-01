@@ -117,7 +117,6 @@ export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
       // Just update the current intent
       syncBurstRef.current.isLiked = newIsLiked;
     }
-    console.log("Dispatching...");
     // Instant optimistic update
     dispatch(optimisticToggleLike({ id: snippet.id, isLike: newIsLiked, currentUser: user }))
 

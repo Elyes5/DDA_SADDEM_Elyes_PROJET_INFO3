@@ -11,6 +11,8 @@ import {
   createSnippet,
   updateSnippet,
   deleteSnippet,
+  optimisticToggleLike,
+  syncLikeSnippet,
 } from './snippetSlice'
 
 interface UserState {
@@ -305,7 +307,7 @@ const userSlice = createSlice({
         if (
           state.currentUserProfile &&
           state.currentUserProfile.id ===
-            action.payload.author.id
+          action.payload.author.id
         ) {
           if (!state.currentUserProfile.snippets)
             state.currentUserProfile.snippets = []
@@ -336,6 +338,51 @@ const userSlice = createSlice({
             state.currentUserProfile.snippets.filter(
               (s) => s.id !== action.payload,
             )
+        }
+      })
+      // Snippet Like Optimistic Toggle
+      .addCase(optimisticToggleLike, (state, action) => {
+        if (state.currentUserProfile?.snippets) {
+          const { id, isLike, currentUser } = action.payload;
+          const snippet = state.currentUserProfile.snippets.find((s) => s.id === id);
+          if (snippet) {
+            const userAlreadyAssigned = snippet.likes?.some(u => u.id === currentUser.id);
+            if (isLike) {
+              if (!userAlreadyAssigned) {
+                snippet.like_count = (snippet.like_count || 0) + 1;
+                snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
+              }
+            } else {
+              if (userAlreadyAssigned) {
+                snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
+                snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
+              }
+            }
+          }
+        }
+      })
+      // Snippet Sync Like Rejected (Rollback)
+      .addCase(syncLikeSnippet.rejected, (state, action) => {
+        if (action.meta.aborted || action.error.message === 'canceled' || action.error.name === 'AbortError') {
+          return;
+        }
+        if (state.currentUserProfile?.snippets) {
+          const { id, isLike, currentUser } = action.meta.arg;
+          const snippet = state.currentUserProfile.snippets.find((s) => s.id === id);
+          if (snippet) {
+            const userAlreadyAssigned = snippet.likes?.some(u => u.id === currentUser.id);
+            if (isLike) { // rolling back a like -> unlike
+              if (userAlreadyAssigned) {
+                snippet.like_count = Math.max(0, (snippet.like_count || 1) - 1);
+                snippet.likes = snippet.likes?.filter((u) => u.id !== currentUser.id) || [];
+              }
+            } else { // rolling back an unlike -> like
+              if (!userAlreadyAssigned) {
+                snippet.like_count = (snippet.like_count || 0) + 1;
+                snippet.likes = snippet.likes ? [...snippet.likes, currentUser] : [currentUser];
+              }
+            }
+          }
         }
       })
   },
