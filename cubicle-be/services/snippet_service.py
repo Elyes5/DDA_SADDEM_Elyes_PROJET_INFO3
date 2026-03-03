@@ -8,6 +8,7 @@ from models.user import User
 from models.topic import Topic
 from models.snippet_image import SnippetImage
 from extensions.otp_ext import db
+from services.notification_service import NotificationService
 
 class SnippetService:
     @staticmethod
@@ -142,6 +143,15 @@ class SnippetService:
                         db.session.add(new_image)
 
             db.session.commit()
+
+            # Notify followers (fire-and-forget — errors don't break the response)
+            try:
+                author = User.get_by_id(author_id)
+                if author:
+                    NotificationService.create_and_push(author, new_snippet)
+            except Exception as e:
+                print(f'[Notification] create_and_push error: {e}')
+
             return new_snippet.to_dict(), None
         except Exception as e:
             db.session.rollback()

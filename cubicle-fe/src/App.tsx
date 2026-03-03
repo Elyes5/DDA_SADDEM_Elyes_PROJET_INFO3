@@ -25,12 +25,15 @@ import {
 } from '@mui/material'
 import Profile from './pages/Profile'
 import { theme } from './theme/theme'
+import { useNotifications } from './hooks/useNotifications'
 
 function App() {
   const dispatch = useAppDispatch()
   const { user } = useAppSelector((state) => state.auth)
 
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  useNotifications()
 
   useEffect(() => {
     void dispatch(checkAuth()).finally(() => {

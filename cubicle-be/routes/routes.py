@@ -3,6 +3,7 @@ from controllers.review_controller import review_bp
 from controllers.user_controller import users_bp
 from controllers.snippet_controller import snippets_bp
 from controllers.topic_controller import topics_bp
+from controllers.notification_controller import notification_bp
 
 
 def register_routes(app):
@@ -11,3 +12,4 @@ def register_routes(app):
     app.register_blueprint(snippets_bp, url_prefix='/api/snippets')
     app.register_blueprint(topics_bp, url_prefix='/api/topics')
     app.register_blueprint(review_bp, url_prefix='/api/reviews')
+    app.register_blueprint(notification_bp, url_prefix='/api/notifications')

@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice'
 import snippetReducer from './slices/snippetSlice'
 import topicReducer from './slices/topicSlice'
 import userReducer from './slices/userSlice'
+import notificationReducer from './slices/notificationSlice'
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     snippets: snippetReducer,
     topics: topicReducer,
     users: userReducer,
+    notifications: notificationReducer,
   },
 })
 
