@@ -1,41 +1,54 @@
 version: "3.9"
-# Concurrency on who creates first : DB or Flask => Switch to migrations
 services:
   web:
     build: .
     ports:
       - "5000:5000"
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: mysql+pymysql://${DEV_DB_USER}:${DEV_DB_PASSWORD}@${DEV_DB_HOST}:3306/${DEV_DB_NAME}
+      DEV_DB_HOST: db          # override localhost → Docker service name
+      DEV_REDIS_URL: redis://redis:6379/0   # override localhost → Docker service name
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       migration:
         condition: service_completed_successfully
+
   migration:
-      build: .
-      volumes:
-        - .:/app
-      environment:
-        FLASK_APP: app.py
-        DATABASE_URL: mysql+pymysql://${DEV_DB_USER}:${DEV_DB_PASSWORD}@db:3306/${DEV_DB_NAME}
-      depends_on:
-        db:
-          condition: service_healthy
-      command: >
-        sh -c "
-          echo 'Waiting for DB...' &&
-          until python -c 'import socket; s = socket.socket(); s.connect((\"db\", 3306))' 2>/dev/null; do
-            sleep 1
-          done &&
-          echo 'DB ready !' &&
-          if [ ! -d 'migrations' ]; then flask db init; fi &&
-          flask db migrate -m 'Auto-migration' &&
-          flask db upgrade
-        "
+    build: .
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      FLASK_APP: app.py
+      DEV_DB_HOST: db          # override localhost → Docker service name
+      DEV_REDIS_URL: redis://redis:6379/0   # override localhost → Docker service name
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for DB...' &&
+        until python -c 'import socket; s = socket.socket(); s.connect((\"db\", 3306))' 2>/dev/null; do
+          sleep 1
+        done &&
+        echo 'DB ready !' &&
+        if [ ! -d 'migrations' ]; then flask db init; fi &&
+        flask db migrate -m 'Auto-migration' &&
+        flask db upgrade
+      "
+
   db:
     image: mysql:8.0
     restart: always
+    env_file:
+      - .env
     environment:
       MYSQL_ROOT_PASSWORD: ${DEV_DB_PASSWORD}
       MYSQL_DATABASE: ${DEV_DB_NAME}
@@ -46,3 +59,15 @@ services:
       retries: 10
     ports:
       - "3306:3306"
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+

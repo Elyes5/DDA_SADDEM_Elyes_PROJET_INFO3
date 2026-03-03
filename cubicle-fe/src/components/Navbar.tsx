@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppDispatch } from '../hooks/hooks'
 import { logoutUser } from '../state/slices/authSlice'
 import type { User } from '../models/User'
+import { NotificationBell } from './NotificationBell'
 
 interface NavbarProps {
   user: User | null
@@ -117,6 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
             gap: 1,
           }}
         >
+          <NotificationBell />
           <Typography
             variant="body2"
             sx={{

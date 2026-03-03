@@ -10,6 +10,7 @@ from models.user import User
 from models.topic import Topic
 from models.snippet import Snippet
 from models.review import Review
+from models.notification import Notification
 from models.user import user_likes_snippet
 from routes.routes import register_routes
 
