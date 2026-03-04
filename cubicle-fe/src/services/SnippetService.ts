@@ -7,9 +7,20 @@ export const snippetService = {
     limit = 10,
     topic = 'All',
     signal?: AbortSignal,
+    language = 'All',
+    sortBy = 'newest',
   ): Promise<{ snippets: Snippet[], hasMore: boolean, total: number }> => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      topic,
+      sort_by: sortBy,
+    })
+    if (language && language.toLowerCase() !== 'all') {
+      params.set('language', language)
+    }
     const { data } = await api.get<{ snippets: Snippet[], hasMore: boolean, total: number }>(
-      `/api/snippets/?page=${page}&limit=${limit}&topic=${encodeURIComponent(topic)}`,
+      `/api/snippets/?${params.toString()}`,
       { signal }
     )
     return data

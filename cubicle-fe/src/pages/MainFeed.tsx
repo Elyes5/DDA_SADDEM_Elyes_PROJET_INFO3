@@ -16,6 +16,7 @@ import FolderPlusIcon from '@mui/icons-material/CreateNewFolder'
 import { theme } from '../theme/theme'
 import { TopicSidebar } from '../components/TopicSidebar'
 import { SnippetCard } from '../components/SnippetCard'
+import { FilterSortBar } from '../components/FilterSortBar'
 import { InfoPanel } from '../components/InfoPanel'
 import { Navbar } from '../components/Navbar'
 import { CreateSnippetModal } from '../components/CreateSnippetModal'
@@ -26,6 +27,8 @@ import { fetchPublicSnippets, resetSnippets } from '../state/slices/snippetSlice
 
 const MainFeed: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>('All')
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('All')
+  const [selectedSort, setSelectedSort] = useState<string>('newest')
   const [isSnippetModalOpen, setIsSnippetModalOpen] = useState(false)
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false)
 
@@ -36,12 +39,18 @@ const MainFeed: React.FC = () => {
 
   useEffect(() => {
     dispatch(resetSnippets())
-    const promise = dispatch(fetchPublicSnippets({ page: 1, limit: 10, topic: selectedTopic }))
+    const promise = dispatch(fetchPublicSnippets({
+      page: 1,
+      limit: 10,
+      topic: selectedTopic,
+      language: selectedLanguage,
+      sortBy: selectedSort,
+    }))
 
     return () => {
       promise.abort()
     }
-  }, [selectedTopic, dispatch])
+  }, [selectedTopic, selectedLanguage, selectedSort, dispatch])
 
   const observer = useRef<IntersectionObserver | null>(null)
   const lastSnippetElementRef = useCallback((node: HTMLDivElement | null) => {
@@ -50,12 +59,24 @@ const MainFeed: React.FC = () => {
 
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
-        void dispatch(fetchPublicSnippets({ page: page + 1, limit: 10, topic: selectedTopic }))
+        void dispatch(fetchPublicSnippets({
+          page: page + 1,
+          limit: 10,
+          topic: selectedTopic,
+          language: selectedLanguage,
+          sortBy: selectedSort,
+        }))
       }
     })
 
     if (node) observer.current.observe(node)
-  }, [snippetsLoading, loadingMore, hasMore, page, selectedTopic, dispatch])
+  }, [snippetsLoading, loadingMore, hasMore, page, selectedTopic, selectedLanguage, selectedSort, dispatch])
+
+  const handleTopicChange = (topic: string) => {
+    setSelectedTopic(topic)
+    setSelectedLanguage('All')
+    setSelectedSort('newest')
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -81,7 +102,7 @@ const MainFeed: React.FC = () => {
           <TopicSidebar
             topics={topics}
             selectedTopic={selectedTopic}
-            onSelectTopic={setSelectedTopic}
+            onSelectTopic={handleTopicChange}
           />
         </Box>
 
@@ -166,6 +187,14 @@ const MainFeed: React.FC = () => {
                 </Button>
               </Stack>
             </Box>
+
+            {/* Filter & Sort Bar */}
+            <FilterSortBar
+              language={selectedLanguage}
+              sortBy={selectedSort}
+              onLanguageChange={(lang) => setSelectedLanguage(lang)}
+              onSortChange={(sort) => setSelectedSort(sort)}
+            />
 
             {(snippetsLoading || topicsLoading) && snippets.length === 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

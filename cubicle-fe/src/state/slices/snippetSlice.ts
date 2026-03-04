@@ -54,11 +54,11 @@ const handleAxiosError = (
 
 export const fetchPublicSnippets = createAsyncThunk<
   { snippets: Snippet[], hasMore: boolean, total: number },
-  { page: number, limit: number, topic: string },
+  { page: number, limit: number, topic: string, language?: string, sortBy?: string },
   { rejectValue: string }
->('snippets/fetchAll', async ({ page, limit, topic }, { rejectWithValue, signal }) => {
+>('snippets/fetchAll', async ({ page, limit, topic, language = 'All', sortBy = 'newest' }, { rejectWithValue, signal }) => {
   try {
-    return await snippetService.getPublicSnippets(page, limit, topic, signal)
+    return await snippetService.getPublicSnippets(page, limit, topic, signal, language, sortBy)
   } catch (err) {
     return rejectWithValue(
       handleAxiosError(

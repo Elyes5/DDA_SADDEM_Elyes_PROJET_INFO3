@@ -291,7 +291,7 @@ class SnippetService:
             return None, str(e)
 
     @staticmethod
-    def get_all_public_snippets(user_id, page=1, limit=10, topic_name=None):
+    def get_all_public_snippets(user_id, page=1, limit=10, topic_name=None, language=None, sort_by='newest'):
         try:
             query = Snippet.query.filter(
                 or_(
@@ -303,10 +303,18 @@ class SnippetService:
             if topic_name and topic_name.lower() != 'all':
                 query = query.join(Topic).filter(Topic.name.ilike(topic_name))
 
-            query = query.order_by(Snippet.creation_date.desc(), Snippet.snippet_id.desc())
+            if language and language.lower() != 'all':
+                query = query.filter(Snippet.language.ilike(language))
+
+            if sort_by == 'oldest':
+                query = query.order_by(Snippet.creation_date.asc(), Snippet.snippet_id.asc())
+            elif sort_by == 'most_liked':
+                query = query.order_by(Snippet.like_count.desc(), Snippet.snippet_id.desc())
+            else:  # 'newest' is the default
+                query = query.order_by(Snippet.creation_date.desc(), Snippet.snippet_id.desc())
 
             total_items = query.count()
-            
+
             snippets = query.offset((page - 1) * limit).limit(limit).all()
 
             return {

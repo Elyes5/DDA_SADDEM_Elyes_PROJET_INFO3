@@ -11,11 +11,14 @@ def get_public_snippets():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
     topic = request.args.get('topic', 'All', type=str)
-    
-    result, error = SnippetService.get_all_public_snippets(current_user_id, page, limit, topic)
+    language = request.args.get('language', None, type=str)
+    sort_by = request.args.get('sort_by', 'newest', type=str)
+
+    result, error = SnippetService.get_all_public_snippets(current_user_id, page, limit, topic, language, sort_by)
     if error:
         return jsonify({"error": "Failed to fetch snippets", "details": error}), 500
     return jsonify(result), 200
+
 
 @snippets_bp.route('/<int:snippet_id>', methods=['GET'])
 @jwt_required()
