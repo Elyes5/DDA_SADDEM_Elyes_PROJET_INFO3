@@ -16,23 +16,10 @@ import FavoriteIcon from '@mui/icons-material/Favorite'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import NewReleasesIcon from '@mui/icons-material/NewReleases'
 
-const LANGUAGES = [
-    'All',
-    'JavaScript',
-    'TypeScript',
-    'Python',
-    'Java',
-    'C#',
-    'C++',
-    'C',
-    'Go',
-    'Rust',
-    'PHP',
-    'Ruby',
-    'Swift',
-    'Kotlin',
-    'Other',
-]
+import { LANGUAGES } from '../constants/languages'
+
+const FILTER_LANGUAGES = ['All', ...LANGUAGES]
+
 
 const SORT_OPTIONS = [
     { value: 'newest', label: 'Newest', icon: <NewReleasesIcon fontSize="small" /> },
@@ -100,21 +87,24 @@ export const FilterSortBar: React.FC<FilterSortBarProps> = ({
                                 borderColor: 'divider',
                             },
                         }}
-                        renderValue={(selected) => (
-                            <Chip
-                                label={selected === 'All' ? 'All Languages' : selected}
-                                size="small"
-                                sx={{
-                                    height: 22,
-                                    fontSize: '0.75rem',
-                                    bgcolor: selected !== 'All' ? 'primary.main' : 'action.hover',
-                                    color: selected !== 'All' ? 'primary.contrastText' : 'text.primary',
-                                    fontWeight: 600,
-                                }}
-                            />
-                        )}
+                        renderValue={(selected) => {
+                            const isAll = selected === 'All'
+                            return (
+                                <Chip
+                                    label={isAll ? 'All Languages' : selected}
+                                    size="small"
+                                    sx={{
+                                        height: 22,
+                                        fontSize: '0.75rem',
+                                        bgcolor: !isAll ? 'primary.main' : 'action.hover',
+                                        color: !isAll ? 'primary.contrastText' : 'text.primary',
+                                        fontWeight: 600,
+                                    }}
+                                />
+                            )
+                        }}
                     >
-                        {LANGUAGES.map((lang) => (
+                        {FILTER_LANGUAGES.map((lang) => (
                             <MenuItem key={lang} value={lang} sx={{ fontSize: '0.875rem' }}>
                                 {lang === 'All' ? 'All Languages' : lang}
                             </MenuItem>

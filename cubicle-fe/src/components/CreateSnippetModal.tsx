@@ -29,6 +29,7 @@ import {
 } from '../state/slices/snippetSlice'
 import CodeEditor from './CodeEditor'
 import { type CreateSnippetRequest } from '../interfaces/SnippetContrat'
+import { LANGUAGES } from '../constants/languages'
 
 interface ImageItem {
   file: File
@@ -54,7 +55,7 @@ export const CreateSnippetModal: React.FC<
     title: '',
     description: '',
     code_content: '',
-    language: 'Javascript',
+    language: 'JavaScript',
     topic_id: '',
     is_public: true,
   })
@@ -74,7 +75,7 @@ export const CreateSnippetModal: React.FC<
       title: '',
       description: '',
       code_content: '',
-      language: 'Javascript',
+      language: 'JavaScript',
       topic_id: '',
       is_public: true,
     })
@@ -267,13 +268,9 @@ export const CreateSnippetModal: React.FC<
               onChange={handleChange}
               disabled={loading}
             >
-              <MenuItem value="Javascript">Javascript</MenuItem>
-              <MenuItem value="Python">Python</MenuItem>
-              <MenuItem value="Typescript">Typescript</MenuItem>
-              <MenuItem value="React JSX">React JSX</MenuItem>
-              <MenuItem value="SQL">SQL</MenuItem>
-              <MenuItem value="Java">Java</MenuItem>
-              <MenuItem value="CSS">CSS</MenuItem>
+              {LANGUAGES.map((lang) => (
+                <MenuItem key={lang} value={lang}>{lang}</MenuItem>
+              ))}
             </TextField>
           </Stack>
 

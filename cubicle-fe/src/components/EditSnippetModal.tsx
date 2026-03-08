@@ -30,6 +30,7 @@ import {
 import CodeEditor from './CodeEditor'
 import type { Snippet } from '../models/Snippet'
 import type { SnippetImage } from '../models/SnippetImage'
+import { LANGUAGES } from '../constants/languages'
 
 interface ImageItem {
   file: File
@@ -56,7 +57,7 @@ export const EditSnippetModal: React.FC<
     title: snippet.title || '',
     description: snippet.description || '',
     code_content: snippet.code_content || '',
-    language: snippet.language || 'Javascript',
+    language: snippet.language || 'JavaScript',
     topic_id: snippet.topic?.id?.toString() || '',
     is_public: snippet.is_public ?? true,
   })
@@ -73,7 +74,7 @@ export const EditSnippetModal: React.FC<
       title: snippet.title || '',
       description: snippet.description || '',
       code_content: snippet.code_content || '',
-      language: snippet.language || 'Javascript',
+      language: snippet.language || 'JavaScript',
       topic_id: snippet.topic?.id?.toString() || '',
       is_public: snippet.is_public ?? true,
     })
@@ -99,7 +100,7 @@ export const EditSnippetModal: React.FC<
       title: snippet.title || '',
       description: snippet.description || '',
       code_content: snippet.code_content || '',
-      language: snippet.language || 'Javascript',
+      language: snippet.language || 'JavaScript',
       topic_id: snippet.topic?.id?.toString() || '',
       is_public: snippet.is_public ?? true,
     })
@@ -303,18 +304,8 @@ export const EditSnippetModal: React.FC<
               onChange={handleChange}
               disabled={loading}
             >
-              {[
-                'Javascript',
-                'Python',
-                'Typescript',
-                'React JSX',
-                'SQL',
-                'Java',
-                'CSS',
-              ].map((lang) => (
-                <MenuItem key={lang} value={lang}>
-                  {lang}
-                </MenuItem>
+              {LANGUAGES.map((lang) => (
+                <MenuItem key={lang} value={lang}>{lang}</MenuItem>
               ))}
             </TextField>
           </Stack>
