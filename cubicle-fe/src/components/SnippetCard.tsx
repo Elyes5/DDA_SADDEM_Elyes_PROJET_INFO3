@@ -40,32 +40,13 @@ import { syncLikeSnippet, optimisticToggleLike, deleteSnippet } from '../state/s
 import { addOrUpdateReview } from '../state/slices/reviewSlice'
 import { followUser, unfollowUser } from '../state/slices/userSlice'
 import { EditSnippetModal } from './EditSnippetModal.tsx'
+import { getLangColor } from '../constants/languages'
 
 interface SnippetCardProps {
   snippet: Snippet
 }
 
-const LANG_COLORS: Record<string, string> = {
-  javascript: '#F0DB4F',
-  typescript: '#3178C6',
-  python: '#3572A5',
-  rust: '#CE412B',
-  go: '#00ACD7',
-  java: '#B07219',
-  css: '#563D7C',
-  html: '#E34C26',
-  ruby: '#701516',
-  php: '#4F5D95',
-  swift: '#FA7343',
-  kotlin: '#A97BFF',
-  csharp: '#178600',
-  cpp: '#F34B7D',
-  bash: '#4EAA25',
-}
 
-function getLangColor(lang?: string | null): string {
-  return LANG_COLORS[lang?.toLowerCase() ?? ''] ?? '#9E9E9E'
-}
 
 export const SnippetCard: React.FC<SnippetCardProps> = ({ snippet }) => {
   const dispatch = useAppDispatch()

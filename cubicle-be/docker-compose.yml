@@ -63,6 +63,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
+    command: redis-server --maxmemory 30mb --maxmemory-policy volatile-lru
     ports:
       - "6379:6379"
     healthcheck:

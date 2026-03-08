@@ -9,6 +9,8 @@ from models.topic import Topic
 from models.snippet_image import SnippetImage
 from extensions.otp_ext import db
 from services.notification_service import NotificationService
+import services.cache_service as cache_service
+
 
 class SnippetService:
     @staticmethod
@@ -43,9 +45,7 @@ class SnippetService:
     @staticmethod
     def _handle_image_upload(file, snippet_id):
         """Helper to handle image upload based on environment."""
-        # Extract the original file extension (e.g., '.jpg', '.png')
         _, ext = os.path.splitext(file.filename)
-        # Generate a UUID for the new filename
         new_filename = f"{uuid.uuid4().hex}{ext}"
 
         if current_app.config.get("ENV") == "development":
@@ -121,7 +121,7 @@ class SnippetService:
 
             new_snippet = Snippet(
                 title=data.get('title'),
-                language=data.get('language', 'Javascript'),
+                language=data.get('language', 'JavaScript'),
                 description=data.get('description', ''),
                 code_content=data.get('code_content'),
                 is_public=is_public,
@@ -144,7 +144,14 @@ class SnippetService:
 
             db.session.commit()
 
-            # Notify followers (fire-and-forget — errors don't break the response)
+            # Invalidate cache
+            try:
+                cache_service.invalidate_public_feed()
+                cache_service.invalidate_private(author_id)
+            except Exception as e:
+                print(f'[Cache] Invalidation error on create: {e}')
+
+            # Notify followers (fire-and-forget)
             try:
                 author = User.get_by_id(author_id)
                 if author:
@@ -189,12 +196,10 @@ class SnippetService:
                     ).all()
 
                     for img in images_to_delete:
-                        # Delete the physical file (local or Azure)
                         SnippetService._delete_image_file(img.image_url)
-                        # Delete line from DB
                         db.session.delete(img)
 
-            # 2. Update the textual information
+            # 2. Update textual information
             if 'is_public' in data:
                 is_public_str = str(data.get('is_public')).lower()
                 snippet.is_public = is_public_str in ['true', '1', 'yes']
@@ -217,6 +222,14 @@ class SnippetService:
                         db.session.add(new_image)
 
             db.session.commit()
+
+            # Invalidate cache
+            try:
+                cache_service.invalidate_public_feed()
+                cache_service.invalidate_private(requester_id)
+            except Exception as e:
+                print(f'[Cache] Invalidation error on update: {e}')
+
             return snippet.to_dict(), None
         except Exception as e:
             db.session.rollback()
@@ -232,13 +245,20 @@ class SnippetService:
             return None, "Unauthorized: You do not own this snippet"
 
         try:
-            # Delete the physical images before deleting the database record
             if snippet.images:
                 for image in snippet.images:
                     SnippetService._delete_image_file(image.image_url)
 
             db.session.delete(snippet)
             db.session.commit()
+
+            # Invalidate cache
+            try:
+                cache_service.invalidate_public_feed()
+                cache_service.invalidate_private(requester_id)
+            except Exception as e:
+                print(f'[Cache] Invalidation error on delete: {e}')
+
             return True, None
         except Exception as e:
             db.session.rollback()
@@ -262,6 +282,16 @@ class SnippetService:
             snippet.liked_by.append(user)
             snippet.like_count = len(snippet.liked_by)
             db.session.commit()
+
+            # Like count changes: invalidate public feed + author's private cache
+            # (private snippets can only be liked by their owner, so their cached
+            # like_count would be stale if we skip this)
+            try:
+                cache_service.invalidate_public_feed()
+                cache_service.invalidate_private(snippet.author_id)
+            except Exception as e:
+                print(f'[Cache] Invalidation error on like: {e}')
+
             return {"like_count": snippet.like_count}, None
         except Exception as e:
             db.session.rollback()
@@ -285,42 +315,140 @@ class SnippetService:
             snippet.liked_by.remove(user)
             snippet.like_count = len(snippet.liked_by)
             db.session.commit()
+
+            # Like count changes: invalidate public feed + author's private cache
+            try:
+                cache_service.invalidate_public_feed()
+                cache_service.invalidate_private(snippet.author_id)
+            except Exception as e:
+                print(f'[Cache] Invalidation error on unlike: {e}')
+
             return {"like_count": snippet.like_count}, None
         except Exception as e:
             db.session.rollback()
             return None, str(e)
 
+    # ---------------------------------------------------------------------------
+    # Merge sort helper
+    # ---------------------------------------------------------------------------
+
+    @staticmethod
+    def _sort_key(snippet_dict: dict, sort_by: str):
+        """Return a sort key for an in-memory snippet dict."""
+        if sort_by == 'most_liked':
+            return snippet_dict.get('like_count', 0)
+        # 'newest' / 'oldest' — sort by creation_date string (ISO format sorts lexicographically)
+        return snippet_dict.get('creation_date', '')
+
+    @staticmethod
+    def _merge_and_paginate(public_snippets: list, private_snippets: list,
+                            page: int, limit: int, sort_by: str) -> dict:
+        """
+        Merge a full list of public snippets and all the user's private
+        snippets, sort them, then slice out the requested page.
+
+        Public snippets come pre-sorted from the DB but we re-sort after
+        merging so that private snippets land in the correct position.
+        """
+        combined = public_snippets + private_snippets
+
+        reverse = sort_by != 'oldest'  # newest & most_liked → descending
+        combined.sort(key=lambda s: SnippetService._sort_key(s, sort_by), reverse=reverse)
+
+        total = len(combined)
+        start = (page - 1) * limit
+        end = start + limit
+        page_items = combined[start:end]
+
+        return {
+            "snippets": page_items,
+            "hasMore": end < total,
+            "total": total,
+        }
+
+    # ---------------------------------------------------------------------------
+    # Main feed query — now split into public (shared cache) + private (per-user)
+    # ---------------------------------------------------------------------------
+
     @staticmethod
     def get_all_public_snippets(user_id, page=1, limit=10, topic_name=None, language=None, sort_by='newest'):
         try:
-            query = Snippet.query.filter(
-                or_(
-                    Snippet.is_public == True,
-                    Snippet.author_id == user_id
-                )
-            )
+            # ------------------------------------------------------------------
+            # 1. Fetch PUBLIC snippets (shared cache)
+            # ------------------------------------------------------------------
+            public_snippets = cache_service.get_public_snippets(topic_name, language, sort_by)
 
-            if topic_name and topic_name.lower() != 'all':
-                query = query.join(Topic).filter(Topic.name.ilike(topic_name))
+            if public_snippets is None:
+                # Cache MISS — query the DB
+                query = Snippet.query.filter(Snippet.is_public == True)
+
+                if topic_name and topic_name.lower() != 'all':
+                    query = query.join(Topic).filter(Topic.name.ilike(topic_name))
+
+                if language and language.lower() != 'all':
+                    query = query.filter(Snippet.language.ilike(language))
+
+                if sort_by == 'oldest':
+                    query = query.order_by(Snippet.creation_date.asc(), Snippet.snippet_id.asc())
+                elif sort_by == 'most_liked':
+                    query = query.order_by(Snippet.like_count.desc(), Snippet.snippet_id.desc())
+                else:  # newest (default)
+                    query = query.order_by(Snippet.creation_date.desc(), Snippet.snippet_id.desc())
+
+                public_snippets = [s.to_dict() for s in query.all()]
+
+                # Store in shared cache — page-agnostic, full list
+                try:
+                    cache_service.set_public_snippets(topic_name, language, sort_by, public_snippets)
+                except Exception as e:
+                    print(f'[Cache] Write error (public snippets): {e}')
+
+            # ------------------------------------------------------------------
+            # 2. Fetch PRIVATE snippets for this user (per-user cache)
+            # ------------------------------------------------------------------
+            private_snippets = cache_service.get_private_snippets(user_id)
+
+            if private_snippets is None:
+                # Cache MISS — query the DB
+                private_query = Snippet.query.filter(
+                    Snippet.author_id == user_id,
+                    Snippet.is_public == False
+                )
+                private_snippets = [s.to_dict() for s in private_query.all()]
+
+                try:
+                    cache_service.set_private_snippets(user_id, private_snippets)
+                except Exception as e:
+                    print(f'[Cache] Write error (private snippets): {e}')
+
+            # ------------------------------------------------------------------
+            # 3. Apply the same filters to the private list in memory.
+            #    The private cache stores ALL private snippets (no filter) so it
+            #    can be reused across different filter combinations — but before
+            #    merging we must narrow it down to match the current request.
+            # ------------------------------------------------------------------
+            filtered_private = private_snippets
 
             if language and language.lower() != 'all':
-                query = query.filter(Snippet.language.ilike(language))
+                filtered_private = [
+                    s for s in filtered_private
+                    if (s.get('language') or '').lower() == language.lower()
+                ]
 
-            if sort_by == 'oldest':
-                query = query.order_by(Snippet.creation_date.asc(), Snippet.snippet_id.asc())
-            elif sort_by == 'most_liked':
-                query = query.order_by(Snippet.like_count.desc(), Snippet.snippet_id.desc())
-            else:  # 'newest' is the default
-                query = query.order_by(Snippet.creation_date.desc(), Snippet.snippet_id.desc())
+            if topic_name and topic_name.lower() != 'all':
+                filtered_private = [
+                    s for s in filtered_private
+                    if (s.get('topic') or {}).get('name', '').lower() == topic_name.lower()
+                ]
 
-            total_items = query.count()
+            # ------------------------------------------------------------------
+            # 4. Merge + sort + paginate in memory
+            # ------------------------------------------------------------------
+            result = SnippetService._merge_and_paginate(
+                public_snippets, filtered_private, page, limit, sort_by
+            )
+            return result, None
 
-            snippets = query.offset((page - 1) * limit).limit(limit).all()
 
-            return {
-                "snippets": [s.to_dict() for s in snippets],
-                "hasMore": (page * limit) < total_items,
-                "total": total_items
-            }, None
         except Exception as e:
             return None, str(e)
