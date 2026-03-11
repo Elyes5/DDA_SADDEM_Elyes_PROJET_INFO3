@@ -367,6 +367,12 @@ const Signup: React.FC = () => {
                     background:
                       'linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%)',
                   },
+                  '&.Mui-disabled': {
+                    background:
+                      'linear-gradient(90deg, #1e40af 0%, #3b82f6 100%)',
+                    color: 'white',
+                    opacity: 0.5,
+                  },
                 }}
               >
                 S'inscrire sur Cubicle

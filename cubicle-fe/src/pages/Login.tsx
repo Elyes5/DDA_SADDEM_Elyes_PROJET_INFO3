@@ -288,6 +288,12 @@ const Login: React.FC = () => {
                     boxShadow:
                       '0 15px 25px -5px rgba(59, 130, 246, 0.6)',
                   },
+                  '&.Mui-disabled': {
+                    background:
+                      'linear-gradient(90deg, #1e40af 0%, #3b82f6 100%)',
+                    color: 'white',
+                    opacity: 0.5,
+                  },
                 }}
               >
                 {!emailSent ? 'Continuer' : 'Vérifier le code'}
